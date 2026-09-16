@@ -62,7 +62,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
       );
       return _parsePagedQuestionsResponse(response.data);
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -83,7 +83,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
       );
       return _parsePagedQuestionsResponse(response.data);
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -103,7 +103,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
       );
       return _parsePagedQuestionsResponse(response.data);
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -142,7 +142,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
         hasNextPage: false,
       );
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -165,7 +165,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -183,7 +183,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.succeeded;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -201,7 +201,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.succeeded;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -226,7 +226,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -260,7 +260,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.data!.items;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -278,7 +278,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.succeeded;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -295,7 +295,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.succeeded;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -322,7 +322,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -346,23 +346,5 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
     return apiResponse.data!;
   }
-
-  ApiException _mapDioException(DioException error) {
-    final responseData = error.response?.data;
-    if (responseData is Map<String, dynamic>) {
-      final apiResponse = ApiResponse<dynamic>.fromJson(responseData);
-      return ApiException(
-        message: apiResponse.message.isEmpty
-            ? error.message ?? 'Request failed.'
-            : apiResponse.message,
-        statusCode: apiResponse.statusCode,
-        errors: apiResponse.errorsBag,
-      );
-    }
-
-    return ApiException(
-      message: error.message ?? 'Request failed.',
-      statusCode: error.response?.statusCode,
-    );
-  }
 }
+

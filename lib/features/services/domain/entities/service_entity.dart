@@ -1,3 +1,39 @@
+typedef Service = ServiceEntity;
+
+class ServiceEntity {
+  const ServiceEntity({
+    required this.id,
+    this.name,
+    this.description,
+    this.requiredDocuments,
+    this.fees,
+    this.category,
+    this.categoryId,
+    this.isAvailable = true,
+    this.officialEntityId,
+    this.officialEntityName,
+    this.isOfficialEntityVerified = false,
+    this.createdAt,
+    this.updatedAt,
+    this.averageRating = 0.0,
+  });
+
+  final String id;
+  final String? name;
+  final String? description;
+  final String? requiredDocuments;
+  final double? fees;
+  final String? category;
+  final String? categoryId;
+  final bool isAvailable;
+  final String? officialEntityId;
+  final String? officialEntityName;
+  final bool isOfficialEntityVerified;
+  final String? createdAt;
+  final String? updatedAt;
+  final double averageRating;
+}
+
 class ServiceCategory {
   const ServiceCategory({
     this.id,
