@@ -39,7 +39,7 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -71,7 +71,7 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -99,32 +99,8 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
-  }
-
-  ApiException _mapDioException(DioException error) {
-    final responseData = error.response?.data;
-    if (responseData is Map<String, dynamic>) {
-      final apiResponse = ApiResponse<dynamic>.fromJson(responseData);
-      return ApiException(
-        message: apiResponse.message.isEmpty
-            ? error.message ?? 'Request failed.'
-            : apiResponse.message,
-        statusCode: apiResponse.statusCode,
-        errors: apiResponse.errorsBag,
-      );
-    }
-
-    if (error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.receiveTimeout ||
-        error.type == DioExceptionType.sendTimeout) {
-      return const ApiException(message: 'TIMEOUT');
-    }
-
-    return ApiException(
-      message: error.message ?? 'Request failed.',
-      statusCode: error.response?.statusCode,
-    );
   }
 }
+

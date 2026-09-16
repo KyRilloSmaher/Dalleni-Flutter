@@ -26,8 +26,10 @@ class PagedList<T> {
       pageNumber: (json['pageNumber'] as num?)?.toInt() ?? 1,
       totalPages: (json['totalPages'] as num?)?.toInt() ?? 0,
       totalCount: (json['totalCount'] as num?)?.toInt() ?? 0,
-      hasPreviousPage: json['hasPreviousPage'] as bool? ?? false,
-      hasNextPage: json['hasNextPage'] as bool? ?? false,
+      hasPreviousPage:
+          json['hasPreviousPage'] as bool? ?? json['hasPrevious'] as bool? ?? false,
+      hasNextPage:
+          json['hasNextPage'] as bool? ?? json['hasNext'] as bool? ?? false,
     );
   }
 }

@@ -1,111 +1,98 @@
+import 'package:dalleni/features/services/presentation/providers/services_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/network/api_exception.dart';
+import '../../data/repositories/services_repository_impl.dart';
 import '../../domain/entities/service_entity.dart';
 
-class ServicesState {
-  const ServicesState({
-    required this.isLoading,
-    this.errorMessage,
-    required this.categories,
-    required this.quickAccessItems,
-    this.featuredCategory,
-  });
-
-  final bool isLoading;
-  final String? errorMessage;
-  final List<ServiceCategory> categories;
-  final List<QuickAccessItem> quickAccessItems;
-  final FeaturedCategory? featuredCategory;
-
-  factory ServicesState.initial() => const ServicesState(
-    isLoading: true,
-    categories: [],
-    quickAccessItems: [],
-  );
-
-  ServicesState copyWith({
-    bool? isLoading,
-    String? errorMessage,
-    List<ServiceCategory>? categories,
-    List<QuickAccessItem>? quickAccessItems,
-    FeaturedCategory? featuredCategory,
-    bool clearError = false,
-  }) {
-    return ServicesState(
-      isLoading: isLoading ?? this.isLoading,
-      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-      categories: categories ?? this.categories,
-      quickAccessItems: quickAccessItems ?? this.quickAccessItems,
-      featuredCategory: featuredCategory ?? this.featuredCategory,
-    );
-  }
-}
 
 class ServicesController extends Notifier<ServicesState> {
   @override
   ServicesState build() {
-    Future.microtask(_fetchServices);
+    Future.microtask(() => _fetchServices());
     return ServicesState.initial();
   }
 
-  Future<void> _fetchServices() async {
+  Future<void> _fetchServices({int pageNumber = 1, int pageSize = 10}) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      // Simulate network request
-      await Future<void>.delayed(const Duration(seconds: 2));
-
-      // MOCK DATA: Notice null fields scattered to test UI graceful fallbacks
-      final mockCategories = [
-        const ServiceCategory(
-          id: '1',
-          name: 'Traffic Department', // Provided
-          description: null, // Null description
-        ),
-        const ServiceCategory(
-          id: '2',
-          name: null, // Null name
-          description: 'Apply for residential electricity meter',
-        ),
-        const ServiceCategory(
-          id: '3',
-          name: 'Business Licensing',
-          description: 'Start your new business correctly',
-          iconPath: 'has_icon_path.png', // Simulated icon
-        ),
-      ];
-
-      final mockQuickAccess = [
-        const QuickAccessItem(id: '1', title: 'Pay Violations', subtitle: null),
-        const QuickAccessItem(
-          id: '2',
-          title: null,
-          subtitle: 'Valid until 2029',
-        ),
-      ];
-
-      final mockFeatured = const FeaturedCategory(
-        id: '1',
-        title: null, // Null title
-        tags: ['Trending', 'Essential'],
-        imagePath: null,
+      final repository = ref.read(servicesRepositoryProvider);
+      final pagedServices = await repository.getServices(
+        pageNumber: pageNumber,
+        pageSize: pageSize,
       );
 
+      final servicesList = pagedServices.items;
+      _updateStateWithServices(servicesList);
+    } catch (e) {
+      final message =
+          e is ApiException ? e.message : 'Failed to load services.';
       state = state.copyWith(
         isLoading: false,
-        categories: mockCategories,
-        quickAccessItems: mockQuickAccess,
-        featuredCategory: mockFeatured,
-      );
-    } catch (_) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Failed to load services.',
+        errorMessage: message,
       );
     }
   }
 
-  Future<void> refresh() => _fetchServices();
+  Future<void> searchServices(String keyword) async {
+    final trimmedKeyword = keyword.trim();
+    if (trimmedKeyword.isEmpty) {
+      state = state.copyWith(searchQuery: '');
+      return _fetchServices();
+    }
+
+    state = state.copyWith(
+      isLoading: true,
+      searchQuery: trimmedKeyword,
+      clearError: true,
+    );
+
+    final repository = ref.read(servicesRepositoryProvider);
+    final result = await repository.searchServices(trimmedKeyword);
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: failure.message,
+          services: [],
+        );
+      },
+      (servicesList) {
+        _updateStateWithServices(
+          servicesList,
+          searchQuery: trimmedKeyword,
+        );
+      },
+    );
+  }
+
+  void _updateStateWithServices(
+    List<ServiceEntity> servicesList, {
+    String? searchQuery,
+  }) {
+    state = state.copyWith(
+      isLoading: false,
+      services: servicesList,
+      searchQuery: searchQuery ?? state.searchQuery,
+      clearError: true,
+    );
+  }
+
+  Future<void> clearSearch() async {
+    state = state.copyWith(searchQuery: '');
+    await _fetchServices();
+  }
+
+  Future<void> refresh() {
+    if (state.isSearching) {
+      return searchServices(state.searchQuery);
+    }
+    return _fetchServices();
+  }
 }
 
 final servicesControllerProvider =
-    NotifierProvider<ServicesController, ServicesState>(ServicesController.new);
+    NotifierProvider<ServicesController, ServicesState>(
+        ServicesController.new);
