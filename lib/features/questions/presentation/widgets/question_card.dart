@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import '../../../../core/theme/dalleni_theme.dart';
-import '../../../../core/widgets/app_card.dart';
 import '../../domain/entities/question_entity.dart';
 import '../screens/question_details_screen.dart';
 
@@ -22,40 +20,39 @@ class QuestionCard extends StatelessWidget {
   final Question question;
   final bool isDetailsView;
   final bool isSaved;
+
   final VoidCallback? onUpvote;
   final VoidCallback? onDownvote;
   final VoidCallback? onSaveToggle;
-  final void Function(String categoryId, String categoryName)? onCategoryTap;
+
+  final VoidCallback? onCategoryTap;
+
   final void Function(QuestionTag tag)? onTagTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.dalleniColors;
     final textTheme = Theme.of(context).textTheme;
+
     final createdAtLabel = DateFormat.yMMMd().add_jm().format(
       question.createdAt.toLocal(),
     );
 
-    return AppCard(
-      padding: const EdgeInsets.all(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: isDetailsView
-            ? null
-            : () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => QuestionDetailsScreen(question: question),
-                  ),
-                );
-              },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
+    return Container(
+      width: double.infinity,
+      color: colors.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // =========================
+          // POST HEADER
+          // =========================
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 12, 12),
+            child: Row(
+              children: [
                 CircleAvatar(
-                  radius: 18,
+                  radius: 21,
                   backgroundColor: colors.surfaceContainerHighest,
                   backgroundImage: question.authorProfileImageUrl != null
                       ? NetworkImage(question.authorProfileImageUrl!)
@@ -67,225 +64,207 @@ class QuestionCard extends StatelessWidget {
                         )
                       : null,
                 ),
-                const SizedBox(width: 12),
+
+                const SizedBox(width: 10),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
+                    children: [
                       Text(
                         question.authorName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: textTheme.titleMedium?.copyWith(
                           color: colors.onSurface,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      Text(
-                        createdAtLabel,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            createdAtLabel,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Icon(
+                            Icons.public,
+                            size: 13,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                _StatPill(
-                  icon: Icons.visibility_outlined,
-                  label: '${question.views}',
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              question.title,
-              style: textTheme.titleLarge?.copyWith(
-                color: colors.onSurface,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            if (question.content != null &&
-                question.content!.trim().isNotEmpty) ...<Widget>[
-              const SizedBox(height: 10),
-              Text(
-                question.content!,
-                maxLines: isDetailsView ? null : 3,
-                overflow: isDetailsView ? null : TextOverflow.ellipsis,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  height: 1.5,
-                ),
-              ),
-            ],
-            if (question.categoryId != null &&
-                question.categoryName != null) ...<Widget>[
-              const SizedBox(height: 14),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: ActionChip(
-                  backgroundColor: colors.surfaceContainerHigh,
-                  side: BorderSide(color: colors.outlineVariant),
-                  label: Text(question.categoryName!),
-                  labelStyle: textTheme.labelLarge?.copyWith(
-                    color: colors.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  onPressed: onCategoryTap == null
-                      ? null
-                      : () => onCategoryTap!(
-                          question.categoryId!,
-                          question.categoryName!,
-                        ),
-                ),
-              ),
-            ],
-            if (question.tags.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: question.tags
-                    .map(
-                      (tag) => ActionChip(
-                        backgroundColor: colors.surfaceContainerHigh,
-                        side: BorderSide(color: colors.outlineVariant),
-                        label: Text(tag.name),
-                        labelStyle: textTheme.labelMedium?.copyWith(
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onPressed: onTagTap == null
-                            ? null
-                            : () => onTagTap!(tag),
-                      ),
-                    )
-                    .toList(growable: false),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Divider(color: colors.outlineVariant, height: 1),
-            const SizedBox(height: 12),
-            Row(
-              children: <Widget>[
-                _ActionButton(
-                  icon: Icons.arrow_upward_rounded,
-                  label: '${question.upVotes}',
-                  onPressed: onUpvote,
-                ),
-                const SizedBox(width: 8),
-                _ActionButton(
-                  icon: Icons.arrow_downward_rounded,
-                  label: '${question.downVotes}',
-                  onPressed: onDownvote,
-                ),
-                const SizedBox(width: 8),
-                _ActionButton(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  label: '${question.answersCount}',
-                  onPressed: isDetailsView
-                      ? null
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  QuestionDetailsScreen(question: question),
-                            ),
-                          );
-                        },
-                ),
-                const Spacer(),
+
                 IconButton(
-                  onPressed: onSaveToggle,
+                  onPressed: () {},
                   icon: Icon(
-                    isSaved
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
-                    color: isSaved ? colors.primary : colors.onSurfaceVariant,
+                    Icons.more_horiz_rounded,
+                    color: colors.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+          ),
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    this.onPressed,
-  });
+          // =========================
+          // QUESTION CONTENT
+          // =========================
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: InkWell(
+              onTap: isDetailsView
+                  ? null
+                  : () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              QuestionDetailsScreen(question: question),
+                        ),
+                      );
+                    },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    question.title,
+                    style: textTheme.titleLarge?.copyWith(
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
 
-  final IconData icon;
-  final String label;
-  final VoidCallback? onPressed;
+                  if (question.content != null &&
+                      question.content!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      question.content!,
+                      maxLines: isDetailsView ? null : 5,
+                      overflow: isDetailsView ? null : TextOverflow.ellipsis,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurface,
+                        height: 1.55,
+                      ),
+                    ),
+                  ],
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.dalleniColors;
-    final textTheme = Theme.of(context).textTheme;
+                  // =========================
+                  // CATEGORY
+                  // =========================
+                  if (question.categoryId != null &&
+                      question.categoryName != null) ...[
+                    const SizedBox(height: 14),
+                    ActionChip(
+                      backgroundColor: colors.surfaceContainerHigh,
+                      side: BorderSide.none,
+                      label: Text(question.categoryName!),
+                      labelStyle: textTheme.labelMedium?.copyWith(
+                        color: colors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      onPressed: onCategoryTap 
+                    ),
+                  ],
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onPressed,
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          color: colors.surfaceContainerHigh,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, size: 18, color: colors.onSurfaceVariant),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: textTheme.labelLarge?.copyWith(
-                color: colors.onSurface,
-                fontWeight: FontWeight.w700,
+                  // =========================
+                  // TAGS
+                  // =========================
+                  if (question.tags.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: question.tags
+                          .map(
+                            (tag) => ActionChip(
+                              backgroundColor: colors.surfaceContainerHigh,
+                              side: BorderSide.none,
+                              label: Text('#${tag.name}'),
+                              labelStyle: textTheme.labelSmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              onPressed: onTagTap == null
+                                  ? null
+                                  : () => onTagTap!(tag),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ],
+                ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+          ),
 
-class _StatPill extends StatelessWidget {
-  const _StatPill({required this.icon, required this.label});
+          const SizedBox(height: 16),
 
-  final IconData icon;
-  final String label;
+          // =========================
+          // STATS
+          // =========================
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                if (question.upVotes > 0)
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 9,
+                        backgroundColor: colors.primary,
+                        child: const Icon(
+                          Icons.thumb_up,
+                          size: 11,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${question.upVotes}',
+                        style: TextStyle(
+                          color: colors.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.dalleniColors;
-    final textTheme = Theme.of(context).textTheme;
+                const Spacer(),
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, size: 16, color: colors.onSurfaceVariant),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: textTheme.labelMedium?.copyWith(
-                color: colors.onSurface,
-                fontWeight: FontWeight.w700,
-              ),
+                Text(
+                  '${question.answersCount} answers',
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                Text(
+                  '${question.views} views',
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Divider(height: 1, color: colors.outlineVariant),
+
+          // Facebook-like separator between posts.
+          Container(height: 8, color: colors.surfaceContainerLowest),
+        ],
       ),
     );
   }

@@ -6,10 +6,10 @@ import '../../../../core/theme/dalleni_theme.dart';
 import '../../../../core/widgets/animated_funky_drawer.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/common_glass_app_bar.dart';
-import '../../../../core/widgets/state_widgets.dart';
-import '../../domain/entities/question_entity.dart';
 import '../providers/home_feed_controller.dart';
-import '../widgets/question_card.dart';
+import '../widgets/fb_post_card.dart';
+import '../widgets/fb_post_skeleton.dart';
+import '../widgets/tag_filter_bar.dart';
 import 'category_questions_screen.dart';
 
 class HomeFeedScreen extends ConsumerStatefulWidget {
@@ -22,6 +22,7 @@ class HomeFeedScreen extends ConsumerStatefulWidget {
 class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
   late final TextEditingController _searchController;
   late final ScrollController _scrollController;
+  bool _isSearchExpanded = false;
 
   @override
   void initState() {
@@ -63,181 +64,271 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
       );
     }
 
+    final showSearchField = _isSearchExpanded || state.searchQuery.isNotEmpty;
+
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: colors.surfaceContainerLow,
       extendBodyBehindAppBar: true,
       drawer: const AnimatedFunkyDrawer(),
-      appBar: CommonGlassAppBar(title: context.l10n.translate('homeFeedTitle')),
+      appBar: CommonGlassAppBar(
+        title: context.l10n.translate('homeFeedTitle'),
+        trailingActions: <Widget>[
+          IconButton(
+            icon: Icon(
+              showSearchField ? Icons.search_off_rounded : Icons.search_rounded,
+              color: colors.onSurface,
+            ),
+            tooltip: context.l10n.translate('homeSearchLabel'),
+            onPressed: () {
+              setState(() {
+                _isSearchExpanded = !_isSearchExpanded;
+                if (!_isSearchExpanded && state.searchQuery.isNotEmpty) {
+                  controller.updateSearchQuery('');
+                }
+              });
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         top: false,
-        child: RefreshIndicator(
-          onRefresh: controller.refresh,
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: <Widget>[
-              const SliverPadding(
-                padding: EdgeInsets.only(top: kToolbarHeight + 32),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        context.l10n.translate('homeFeedSubtitle'),
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: colors.onSurfaceVariant,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: RefreshIndicator(
+              onRefresh: controller.refresh,
+              color: colors.primary,
+              backgroundColor: colors.surface,
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: <Widget>[
+                  // Top padding offset for glass appbar
+                  const SliverPadding(
+                    padding: EdgeInsets.only(top: kToolbarHeight + 16),
+                  ),
+
+                  // Collapsible Modern Search Bar
+                  if (showSearchField)
+                    SliverToBoxAdapter(
+                      child: Container(
+                        color: colors.surface,
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                        child: AppTextField(
+                          controller: _searchController,
+                          labelText: context.l10n.translate('homeSearchLabel'),
+                          hintText: context.l10n.translate('homeSearchHint'),
+                          prefixIcon: const Icon(Icons.search_rounded),
+                          suffixIcon: state.searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear_rounded),
+                                  onPressed: () =>
+                                      controller.updateSearchQuery(''),
+                                )
+                              : null,
+                          onChanged: controller.updateSearchQuery,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        controller: _searchController,
-                        labelText: context.l10n.translate('homeSearchLabel'),
-                        hintText: context.l10n.translate('homeSearchHint'),
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        onChanged: controller.updateSearchQuery,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverToBoxAdapter(
-                  child: _TagFilterBar(
-                    selectedTagId: state.selectedTag?.id,
-                    tags: state.availableTags,
-                    onTagSelected: (tag) => controller.selectTag(tag),
-                  ),
-                ),
-              ),
-              const SliverPadding(padding: EdgeInsets.only(top: 16)),
-              if (state.isLoading && state.questions.isEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: AppLoadingState(),
-                )
-              else if (state.errorMessage != null && state.questions.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: AppErrorState(
-                    message: state.errorMessage!,
-                    onRetry: controller.refresh,
-                  ),
-                )
-              else if (state.showEmptyState)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: AppEmptyState(
-                    title: context.l10n.translate('homeEmptyTitle'),
-                    subtitle: context.l10n.translate('homeEmptySubtitle'),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (index >= state.questions.length) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
+                    ),
 
-                        final question = state.questions[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: QuestionCard(
-                            question: question,
-                            isSaved: state.savedQuestionIds.contains(
-                              question.id,
+                  // Horizontal Tag Filter Bar Section
+                  if (state.availableTags.isNotEmpty)
+                    SliverToBoxAdapter(
+                      child: Container(
+                        color: colors.surface,
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            TagFilterBar(
+                              selectedTagId: state.selectedTag?.id,
+                              tags: state.availableTags,
+                              onTagSelected: (tag) => controller.selectTag(tag),
                             ),
-                            onUpvote: () =>
-                                controller.upvoteQuestion(question.id),
-                            onDownvote: () =>
-                                controller.downvoteQuestion(question.id),
-                            onSaveToggle: () =>
-                                controller.toggleSaveQuestion(question),
-                            onCategoryTap: (categoryId, categoryName) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => CategoryQuestionsScreen(
-                                    categoryId: categoryId,
-                                    categoryName: categoryName,
-                                  ),
-                                ),
-                              );
-                            },
-                            onTagTap: controller.selectTag,
-                          ),
-                        );
-                      },
-                      childCount:
-                          state.questions.length +
-                          (state.isLoadingMore ? 1 : 0),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // Subtle feed gap between header filters & feed posts
+                  SliverToBoxAdapter(
+                    child: Container(
+                      height: 8,
+                      color: colors.surfaceContainerLow,
                     ),
                   ),
-                ),
-            ],
+
+                  // Loading State (Shimmer Skeleton UI)
+                  if (state.isLoading && state.questions.isEmpty)
+                    const SliverToBoxAdapter(
+                      child: FbFeedSkeletonList(count: 4),
+                    )
+                  // Error State
+                  else if (state.errorMessage != null && state.questions.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Container(
+                        color: colors.surface,
+                        padding: const EdgeInsets.all(24),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Icon(
+                                Icons.error_outline_rounded,
+                                size: 54,
+                                color: colors.error,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                context.l10n.translate('errorStateTitle'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                state.errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: colors.onSurfaceVariant),
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton.icon(
+                                onPressed: controller.refresh,
+                                icon: const Icon(Icons.refresh_rounded),
+                                label: Text(
+                                  context.l10n.translate('retryButton'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  // Empty Feed State
+                  else if (state.showEmptyState)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Container(
+                        color: colors.surface,
+                        padding: const EdgeInsets.all(24),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Icon(
+                                Icons.dynamic_feed_rounded,
+                                size: 64,
+                                color: colors.onSurfaceVariant.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                context.l10n.translate('homeEmptyTitle'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                context.l10n.translate('homeEmptySubtitle'),
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: colors.onSurfaceVariant),
+                              ),
+                              if (state.selectedTag != null) ...<Widget>[
+                                const SizedBox(height: 20),
+                                OutlinedButton.icon(
+                                  onPressed: () => controller.selectTag(null),
+                                  icon: const Icon(Icons.filter_alt_off_rounded),
+                                  label: const Text('Clear Filter'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  // Main Facebook Feed Post List
+                  else
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          if (index >= state.questions.length) {
+                            return Container(
+                              color: colors.surface,
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          }
+
+                          final question = state.questions[index];
+                          final isLastItem = index == state.questions.length - 1;
+
+                          return Column(
+                            children: <Widget>[
+                              FbPostCard(
+                                question: question,
+                                isSaved: state.savedQuestionIds.contains(
+                                  question.id,
+                                ),
+                                onUpvote: () =>
+                                    controller.upvoteQuestion(question.id),
+                                onDownvote: () =>
+                                    controller.downvoteQuestion(question.id),
+                                onSaveToggle: !state.areSavedQuestionsReady
+                                    ? null
+                                    : () => controller.toggleSaveQuestion(
+                                        question,
+                                      ),
+                                onCategoryTap: () {
+                                  print("category id ${question.categoryId}");
+                                  print("category name ${question.categoryName}");
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => CategoryQuestionsScreen(
+                                        categoryId: question.categoryId??"",
+                                        categoryName: question.categoryName??"",
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onTagTap: controller.selectTag,
+                              ),
+                   
+                              if (!isLastItem || state.isLoadingMore)
+                                Container(
+                                  height: 8,
+                                  color: colors.surfaceContainerLow,
+                                ),
+                            ],
+                          );
+                        },
+                        childCount:
+                            state.questions.length +
+                            (state.isLoadingMore ? 1 : 0),
+                      ),
+                    ),
+
+                  const SliverPadding(
+                    padding: EdgeInsets.only(bottom: 32),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _TagFilterBar extends StatelessWidget {
-  const _TagFilterBar({
-    required this.selectedTagId,
-    required this.tags,
-    required this.onTagSelected,
-  });
-
-  final String? selectedTagId;
-  final List<QuestionTag> tags;
-  final ValueChanged<QuestionTag?> onTagSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.dalleniColors;
-    final textTheme = Theme.of(context).textTheme;
-
-    return SizedBox(
-      height: 46,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: tags.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          final isAllOption = index == 0;
-          final isSelected = isAllOption
-              ? selectedTagId == null
-              : tags[index - 1].id == selectedTagId;
-          final label = isAllOption
-              ? context.l10n.translate('homeAllTags')
-              : tags[index - 1].name;
-
-          return ChoiceChip(
-            selected: isSelected,
-            label: Text(label),
-            onSelected: (_) =>
-                onTagSelected(isAllOption ? null : tags[index - 1]),
-            selectedColor: colors.primaryContainer,
-            backgroundColor: colors.surfaceContainerHigh,
-            side: BorderSide(
-              color: isSelected ? colors.primary : colors.outlineVariant,
-            ),
-            labelStyle: textTheme.labelLarge?.copyWith(
-              color: isSelected ? colors.onPrimaryContainer : colors.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
-          );
-        },
       ),
     );
   }

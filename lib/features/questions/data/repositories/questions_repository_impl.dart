@@ -115,7 +115,7 @@ class QuestionsRepositoryImpl implements QuestionsRepository {
   }
 
   @override
-  Future<bool> saveQuestion(String questionId, String userId) {
+  Future<String?> saveQuestion(String questionId, String userId) {
     return _remoteDataSource.saveQuestion(questionId, userId);
   }
 

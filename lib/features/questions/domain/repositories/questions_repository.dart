@@ -37,17 +37,8 @@ abstract class QuestionsRepository {
   Future<bool> voteQuestion(String id, int type);
   Future<List<QuestionCategory>> getCategories();
   Future<List<QuestionTag>> getTags({int pageNumber = 1, int pageSize = 20});
-  Future<bool> saveQuestion(String questionId, String userId);
+  Future<String?> saveQuestion(String questionId, String userId);
   Future<bool> unsaveQuestion(String savedQuestionId);
   Future<List<SavedQuestion>> getSavedQuestions();
 }
 
-abstract class AnswersRepository {
-  Future<List<Answer>> getAnswers(String questionId);
-  Future<bool> createAnswer({
-    required String content,
-    required String questionId,
-  });
-  Future<bool> voteAnswer(String id, int type);
-  Future<bool> acceptAnswer(String answerId, String questionId);
-}

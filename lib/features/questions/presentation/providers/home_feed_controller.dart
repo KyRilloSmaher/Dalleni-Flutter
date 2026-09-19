@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/paged_list.dart';
@@ -12,6 +13,7 @@ class HomeFeedState {
     required this.isLoading,
     required this.isLoadingMore,
     required this.isRefreshingSavedQuestions,
+    required this.areSavedQuestionsReady,
     required this.questions,
     required this.availableTags,
     required this.savedQuestionIds,
@@ -26,6 +28,7 @@ class HomeFeedState {
   final bool isLoading;
   final bool isLoadingMore;
   final bool isRefreshingSavedQuestions;
+  final bool areSavedQuestionsReady;
   final List<Question> questions;
   final List<QuestionTag> availableTags;
   final Set<String> savedQuestionIds;
@@ -41,6 +44,7 @@ class HomeFeedState {
       isLoading: true,
       isLoadingMore: false,
       isRefreshingSavedQuestions: false,
+      areSavedQuestionsReady: false,
       questions: <Question>[],
       availableTags: <QuestionTag>[],
       savedQuestionIds: <String>{},
@@ -58,6 +62,7 @@ class HomeFeedState {
     bool? isLoading,
     bool? isLoadingMore,
     bool? isRefreshingSavedQuestions,
+    bool? areSavedQuestionsReady,
     List<Question>? questions,
     List<QuestionTag>? availableTags,
     Set<String>? savedQuestionIds,
@@ -75,6 +80,8 @@ class HomeFeedState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       isRefreshingSavedQuestions:
           isRefreshingSavedQuestions ?? this.isRefreshingSavedQuestions,
+      areSavedQuestionsReady:
+          areSavedQuestionsReady ?? this.areSavedQuestionsReady,
       questions: questions ?? this.questions,
       availableTags: availableTags ?? this.availableTags,
       savedQuestionIds: savedQuestionIds ?? this.savedQuestionIds,
@@ -93,6 +100,9 @@ class HomeFeedController extends Notifier<HomeFeedState> {
   static const int _pageSize = 10;
 
   Timer? _searchDebounce;
+  bool _isBootstrapping = false;
+  int _savedStateEpoch = 0;
+  final Set<String> _inFlightSaveQuestionIds = <String>{};
 
   @override
   HomeFeedState build() {
@@ -102,8 +112,16 @@ class HomeFeedController extends Notifier<HomeFeedState> {
   }
 
   Future<void> _bootstrap() async {
-    await Future.wait(<Future<void>>[_loadTags(), _loadSavedQuestions()]);
-    await refresh();
+    if (_isBootstrapping) {
+      return;
+    }
+    _isBootstrapping = true;
+    try {
+      await Future.wait(<Future<void>>[_loadTags(), _loadSavedQuestions()]);
+      await refresh();
+    } finally {
+      _isBootstrapping = false;
+    }
   }
 
   Future<void> _loadTags() async {
@@ -116,13 +134,18 @@ class HomeFeedController extends Notifier<HomeFeedState> {
   }
 
   Future<void> _loadSavedQuestions() async {
+    final epochAtStart = _savedStateEpoch;
     state = state.copyWith(isRefreshingSavedQuestions: true, clearError: true);
     try {
       final savedQuestions = await ref
           .read(questionsRepositoryProvider)
           .getSavedQuestions();
+      if (epochAtStart != _savedStateEpoch) {
+        return;
+      }
       state = state.copyWith(
         isRefreshingSavedQuestions: false,
+        areSavedQuestionsReady: true,
         savedQuestionIds: savedQuestions
             .map((savedQuestion) => savedQuestion.questionId)
             .toSet(),
@@ -132,9 +155,25 @@ class HomeFeedController extends Notifier<HomeFeedState> {
         },
       );
     } catch (_) {
-      state = state.copyWith(isRefreshingSavedQuestions: false);
+      if (epochAtStart != _savedStateEpoch) {
+        return;
+      }
+      state = state.copyWith(
+        isRefreshingSavedQuestions: false,
+        areSavedQuestionsReady: true,
+      );
+    } finally {
+      if (state.isRefreshingSavedQuestions) {
+        state = state.copyWith(
+          isRefreshingSavedQuestions: false,
+          areSavedQuestionsReady: true,
+        );
+      }
     }
   }
+
+  @visibleForTesting
+  Future<void> reloadSavedQuestions() => _loadSavedQuestions();
 
   Future<void> refresh() async {
     state = state.copyWith(
@@ -204,53 +243,92 @@ class HomeFeedController extends Notifier<HomeFeedState> {
   }
 
   Future<void> toggleSaveQuestion(Question question) async {
+    if (!state.areSavedQuestionsReady) {
+      return;
+    }
+    if (!_inFlightSaveQuestionIds.add(question.id)) {
+      return;
+    }
+
     final currentlySaved = state.savedQuestionIds.contains(question.id);
     final previousSavedIds = state.savedQuestionIds;
     final previousRecordIds = state.savedQuestionRecordIds;
 
-    if (currentlySaved) {
-      final savedRecordId = state.savedQuestionRecordIds[question.id];
-      if (savedRecordId == null) {
+    try {
+      if (currentlySaved) {
+        await _unsaveQuestion(
+          question: question,
+          previousSavedIds: previousSavedIds,
+          previousRecordIds: previousRecordIds,
+        );
         return;
       }
 
-      state = state.copyWith(
-        savedQuestionIds: <String>{...state.savedQuestionIds}
-          ..remove(question.id),
-        savedQuestionRecordIds: <String, String>{
-          ...state.savedQuestionRecordIds,
-        }..remove(question.id),
+      await _saveQuestion(
+        question: question,
+        previousSavedIds: previousSavedIds,
+        previousRecordIds: previousRecordIds,
       );
+    } finally {
+      _inFlightSaveQuestionIds.remove(question.id);
+    }
+  }
 
-      try {
-        await ref
-            .read(questionsRepositoryProvider)
-            .unsaveQuestion(savedRecordId);
-      } catch (error) {
-        state = state.copyWith(
-          savedQuestionIds: previousSavedIds,
-          savedQuestionRecordIds: previousRecordIds,
-          errorMessage: error.toString(),
-        );
-      }
-
+  Future<void> _unsaveQuestion({
+    required Question question,
+    required Set<String> previousSavedIds,
+    required Map<String, String> previousRecordIds,
+  }) async {
+    final savedRecordId = state.savedQuestionRecordIds[question.id];
+    if (savedRecordId == null) {
       return;
     }
 
+    _savedStateEpoch++;
+    state = state.copyWith(
+      savedQuestionIds: <String>{...state.savedQuestionIds}..remove(question.id),
+      savedQuestionRecordIds: <String, String>{...state.savedQuestionRecordIds}
+        ..remove(question.id),
+    );
+
+    try {
+      await ref.read(questionsRepositoryProvider).unsaveQuestion(savedRecordId);
+    } catch (error) {
+      state = state.copyWith(
+        savedQuestionIds: previousSavedIds,
+        savedQuestionRecordIds: previousRecordIds,
+        errorMessage: error.toString(),
+      );
+    }
+  }
+
+  Future<void> _saveQuestion({
+    required Question question,
+    required Set<String> previousSavedIds,
+    required Map<String, String> previousRecordIds,
+  }) async {
     final userId = ref.read(localStorageServiceProvider).getUserId();
     if (userId == null || userId.isEmpty) {
       return;
     }
 
+    _savedStateEpoch++;
     state = state.copyWith(
       savedQuestionIds: <String>{...state.savedQuestionIds, question.id},
     );
 
     try {
-      await ref
+      final savedRecordId = await ref
           .read(questionsRepositoryProvider)
           .saveQuestion(question.id, userId);
-      await _loadSavedQuestions();
+      if (savedRecordId != null && savedRecordId.isNotEmpty) {
+        state = state.copyWith(
+          savedQuestionRecordIds: <String, String>{
+            ...state.savedQuestionRecordIds,
+            question.id: savedRecordId,
+          },
+        );
+      }
     } catch (error) {
       state = state.copyWith(
         savedQuestionIds: previousSavedIds,
@@ -270,12 +348,15 @@ class HomeFeedController extends Notifier<HomeFeedState> {
       questions: state.questions
           .map(
             (question) => question.id == questionId
-                ? question.copyWith(upVotes: question.upVotes + delta)
+                ? (voteType == 0
+                      ? question.copyWith(upVotes: question.upVotes + delta)
+                      : question.copyWith(
+                          downVotes: question.downVotes + delta.abs(),
+                        ))
                 : question,
           )
           .toList(growable: false),
     );
-
     try {
       await ref
           .read(questionsRepositoryProvider)

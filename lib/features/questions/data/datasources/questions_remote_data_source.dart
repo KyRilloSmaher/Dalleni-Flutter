@@ -37,7 +37,7 @@ abstract class QuestionsRemoteDataSource {
   Future<bool> voteQuestion(String id, int type);
   Future<List<CategoryModel>> getCategories();
   Future<List<TagModel>> getTags({int pageNumber = 1, int pageSize = 20});
-  Future<bool> saveQuestion(String questionId, String userId);
+  Future<String?> saveQuestion(String questionId, String userId);
   Future<bool> unsaveQuestion(String savedQuestionId);
   Future<List<SavedQuestionModel>> getSavedQuestions();
 }
@@ -95,7 +95,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/questions/tag/$tagId',
+        '/tags/${tagId}/questions',
         queryParameters: <String, dynamic>{
           'pageNumber': pageNumber,
           'pageSize': pageSize,
@@ -115,14 +115,19 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/questions/category/$categoryId',
+        '/categories/$categoryId/questions',
+        queryParameters: <String, dynamic>{
+          'pageNumber': pageNumber,
+          'pageSize': pageSize,
+        },
       );
-      final apiResponse = ApiResponse<List<QuestionModel>>.fromJson(
+
+      final apiResponse = ApiResponse<PagedList<QuestionModel>>.fromJson(
         response.data ?? <String, dynamic>{},
-        fromJsonT: (json) => (json as List<dynamic>? ?? <dynamic>[])
-            .whereType<Map<String, dynamic>>()
-            .map(QuestionModel.fromJson)
-            .toList(growable: false),
+        fromJsonT: (json) => PagedList<QuestionModel>.fromJson(
+          json as Map<String, dynamic>,
+          (json) => QuestionModel.fromJson(json as Map<String, dynamic>),
+        ),
       );
 
       if (!apiResponse.succeeded) {
@@ -132,15 +137,15 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
         );
       }
 
-      final questions = apiResponse.data ?? const <QuestionModel>[];
-      return PagedList<QuestionModel>(
-        items: questions,
-        pageNumber: pageNumber,
-        totalPages: questions.isEmpty ? 0 : 1,
-        totalCount: questions.length,
-        hasPreviousPage: false,
-        hasNextPage: false,
-      );
+      return apiResponse.data ??
+          const PagedList<QuestionModel>(
+            items: [],
+            pageNumber: 1,
+            totalPages: 0,
+            totalCount: 0,
+            hasPreviousPage: false,
+            hasNextPage: false,
+          );
     } on DioException catch (error) {
       throw mapDioException(error);
     }
@@ -265,18 +270,25 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
   }
 
   @override
-  Future<bool> saveQuestion(String questionId, String userId) async {
+  Future<String?> saveQuestion(String questionId, String userId) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/user/saved-questions/add',
         data: <String, dynamic>{'questionId': questionId, 'userId': userId},
       );
-      final apiResponse = ApiResponse<bool>.fromJson(
+      final apiResponse = ApiResponse<String?>.fromJson(
         response.data ?? <String, dynamic>{},
-        fromJsonT: (json) => json as bool? ?? true,
+        fromJsonT: _parseSavedQuestionRecordId,
       );
 
-      return apiResponse.succeeded;
+      if (!apiResponse.succeeded) {
+        throw ApiException(
+          message: apiResponse.message,
+          statusCode: apiResponse.statusCode,
+        );
+      }
+
+      return apiResponse.data;
     } on DioException catch (error) {
       throw mapDioException(error);
     }
@@ -286,14 +298,21 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
   Future<bool> unsaveQuestion(String savedQuestionId) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        '/user/saved-questions/remove/$savedQuestionId',
+        '/user/saved-questions/$savedQuestionId/remove',
       );
       final apiResponse = ApiResponse<bool>.fromJson(
         response.data ?? <String, dynamic>{},
         fromJsonT: (json) => json as bool? ?? true,
       );
 
-      return apiResponse.succeeded;
+      if (!apiResponse.succeeded) {
+        throw ApiException(
+          message: apiResponse.message,
+          statusCode: apiResponse.statusCode,
+        );
+      }
+
+      return true;
     } on DioException catch (error) {
       throw mapDioException(error);
     }
@@ -303,7 +322,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
   Future<List<SavedQuestionModel>> getSavedQuestions() async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/user/saved-questions/by-user-Id',
+        '/user/saved-questions',
       );
       final apiResponse = ApiResponse<List<SavedQuestionModel>>.fromJson(
         response.data ?? <String, dynamic>{},
@@ -346,5 +365,14 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
     return apiResponse.data!;
   }
-}
 
+  String? _parseSavedQuestionRecordId(Object? json) {
+    if (json is Map) {
+      final id = json['id']?.toString();
+      if (id != null && id.isNotEmpty) {
+        return id;
+      }
+    }
+    return null;
+  }
+}

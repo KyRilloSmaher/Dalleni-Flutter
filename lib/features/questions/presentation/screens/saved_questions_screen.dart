@@ -44,7 +44,7 @@ class SavedQuestionsScreen extends ConsumerWidget {
                   final question = state.questions[index];
                   return QuestionCard(
                     question: question,
-                    // We can handle upvotes here too if needed
+               
                   );
                 },
               ),

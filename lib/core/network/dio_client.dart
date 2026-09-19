@@ -15,7 +15,7 @@ final tokenSchedulerProvider = Provider<TokenScheduler>((ref) {
   return TokenScheduler();
 });
 
-final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
+final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {//Dio for Auth
   final dio = Dio(
     BaseOptions(
       baseUrl: AppConstants.baseUrl,

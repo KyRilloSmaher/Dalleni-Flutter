@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/providers/core_providers.dart';
 import '../../domain/entities/question_entity.dart';
 import 'questions_providers.dart';
 
@@ -68,30 +69,55 @@ class SavedQuestionsController extends Notifier<SavedQuestionsState> {
 
   Future<void> toggleSave(Question question) async {
     final savedQuestionId = state.savedRecordIds[question.id];
-    if (savedQuestionId == null) {
+
+    // =========================
+    // UNSAVE
+    // =========================
+    if (savedQuestionId != null) {
+      final originalState = state;
+
+      // Optimistic update
+      state = state.copyWith(
+        questions: state.questions
+            .where((savedQuestion) => savedQuestion.id != question.id)
+            .toList(growable: false),
+        savedRecordIds: <String, String>{...state.savedRecordIds}
+          ..remove(question.id),
+      );
+
+      try {
+        await ref
+            .read(questionsRepositoryProvider)
+            .unsaveQuestion(savedQuestionId);
+      } catch (error) {
+        // Rollback
+        state = originalState.copyWith(errorMessage: error.toString());
+      }
+
       return;
     }
 
-    final originalState = state;
-    state = state.copyWith(
-      questions: state.questions
-          .where((savedQuestion) => savedQuestion.id != question.id)
-          .toList(growable: false),
-      savedRecordIds: <String, String>{...state.savedRecordIds}
-        ..remove(question.id),
-    );
+    // =========================
+    // SAVE
+    // =========================
+    final userId = ref.read(localStorageServiceProvider).getUserId();
+    if (userId == null || userId.isEmpty) {
+      state = state.copyWith(errorMessage: 'User not authenticated');
+      return;
+    }
 
     try {
       await ref
           .read(questionsRepositoryProvider)
-          .unsaveQuestion(savedQuestionId);
+          .saveQuestion(question.id, userId);
+
+      await fetchSavedQuestions();
     } catch (error) {
-      state = originalState.copyWith(errorMessage: error.toString());
+      state = state.copyWith(errorMessage: error.toString());
     }
   }
 
-  bool isBookmarked(String questionId) =>
-      state.savedRecordIds.containsKey(questionId);
+ 
 }
 
 final savedQuestionsControllerProvider =

@@ -18,16 +18,26 @@ class LocalStorageService {
   }
 
   Future<void> saveToken(String token) async {
+    print('[AUTH DEBUG] save access token: ${token.isNotEmpty} (instance: ${identityHashCode(this)})');
     await _preferences.setString(accessTokenKey, token);
   }
 
-  String? getToken() => _preferences.getString(accessTokenKey);
+  String? getToken() {
+    final token = _preferences.getString(accessTokenKey);
+    print('[AUTH DEBUG] get access token: ${token != null && token.isNotEmpty} (instance: ${identityHashCode(this)})');
+    return token;
+  }
 
   Future<void> saveRefreshToken(String refreshToken) async {
+    print('[AUTH DEBUG] save refresh token: ${refreshToken.isNotEmpty} (instance: ${identityHashCode(this)})');
     await _preferences.setString(refreshTokenKey, refreshToken);
   }
 
-  String? getRefreshToken() => _preferences.getString(refreshTokenKey);
+  String? getRefreshToken() {
+    final refreshToken = _preferences.getString(refreshTokenKey);
+    print('[AUTH DEBUG] get refresh token: ${refreshToken != null && refreshToken.isNotEmpty} (instance: ${identityHashCode(this)})');
+    return refreshToken;
+  }
 
   Future<void> saveUserId(String userId) async {
     await _preferences.setString(userIdKey, userId);
@@ -48,6 +58,7 @@ class LocalStorageService {
   String? getThemeMode() => _preferences.getString(themeModeKey);
 
   Future<void> clearAll() async {
+    print('[AUTH DEBUG] clearAll executed (instance: ${identityHashCode(this)})');
     await _preferences.remove(accessTokenKey);
     await _preferences.remove(refreshTokenKey);
     await _preferences.remove(userIdKey);
@@ -57,6 +68,7 @@ class LocalStorageService {
   }
 
   Future<void> clearSession() async {
+    print('[AUTH DEBUG] clearSession executed (instance: ${identityHashCode(this)})');
     await _preferences.remove(accessTokenKey);
     await _preferences.remove(refreshTokenKey);
     await _preferences.remove(userIdKey);
