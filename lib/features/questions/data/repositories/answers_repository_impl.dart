@@ -46,7 +46,22 @@ class AnswersRepositoryImpl implements AnswersRepository {
   }
 
   @override
-  Future<bool> acceptAnswer(String answerId, String questionId) {
-    return _remoteDataSource.acceptAnswer(answerId, questionId);
+  Future<bool> acceptAnswer(String answerId) {
+    return _remoteDataSource.acceptAnswer(answerId);
+  }
+
+  @override
+  Future<bool> unacceptAnswer(String answerId) {
+   return _remoteDataSource.unacceptAnswer(answerId);
+  }
+
+  @override
+  Future<bool> markAnswer(String answerId) {
+   return _remoteDataSource.markAnswer(answerId);
+  }
+
+  @override
+  Future<bool> unmarkAnswer(String answerId) {
+    return _remoteDataSource.unmarkAnswer(answerId);
   }
 }

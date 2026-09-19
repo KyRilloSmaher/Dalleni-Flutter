@@ -1,8 +1,10 @@
-
+import 'package:dalleni/core/providers/core_providers.dart';
+import 'package:dalleni/features/questions/presentation/widgets/common_action.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
 
+import '../../../../core/storage/local_storage_service.dart';
 import '../../../../core/theme/dalleni_theme.dart';
 import '../../domain/entities/question_entity.dart';
 import '../providers/question_details_controller.dart';
@@ -12,10 +14,12 @@ class AnswerCard extends ConsumerStatefulWidget {
     super.key,
     required this.answer,
     required this.questionId,
+    required this.questionuserId,
   });
 
   final Answer answer;
   final String questionId;
+  final String questionuserId;
 
   @override
   ConsumerState<AnswerCard> createState() => _AnswerCardState();
@@ -25,12 +29,37 @@ class _AnswerCardState extends ConsumerState<AnswerCard> {
   bool _isUpvoted = false;
   bool _isDownvoted = false;
 
+  bool _isQuestionOwner = false;
+  bool _isCheckingOwner = true;
+
   late int _upvotes;
 
   @override
   void initState() {
     super.initState();
+
+    debugPrint('AnswerCard CREATED: ${widget.answer.id}');
+
     _upvotes = widget.answer.upvotes;
+    _checkQuestionOwner();
+  }
+
+  @override
+  void dispose() {
+    debugPrint('AnswerCard DISPOSED: ${widget.answer.id}');
+    super.dispose();
+  }
+
+  Future<void> _checkQuestionOwner() async {
+    final localStorage = ref.read(localStorageServiceProvider);
+    final currentUserId = localStorage.getUserId();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isQuestionOwner = currentUserId == widget.questionuserId;
+      _isCheckingOwner = false;
+    });
   }
 
   void _handleUpvote() {
@@ -89,18 +118,44 @@ class _AnswerCardState extends ConsumerState<AnswerCard> {
     controller.deleteComment(widget.answer.id);
   }
 
+  void _handleAccept() {
+    final controller = ref.read(
+      questionDetailsControllerProvider(widget.questionId).notifier,
+    );
+
+    controller.toggleAcceptAnswer(
+      answerId: widget.answer.id,
+      isAccepted: widget.answer.isApproved,
+    );
+  }
+
+  void _handleMark(bool isMarked) {
+    final newMarkedState = !isMarked;
+
+    debugPrint('isMarked: $isMarked');
+    debugPrint('newMarkedState: $newMarkedState');
+
+    ref
+        .read(questionDetailsControllerProvider(widget.questionId).notifier)
+        .toggleMarkAnswer(
+          answerId: widget.answer.id,
+          shouldMark: newMarkedState,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.dalleniColors;
 
+    final isMarked = ref.watch(
+      questionDetailsControllerProvider(
+        widget.questionId,
+      ).select((state) => state.markedAnswers[widget.answer.id] ?? false),
+    );
+
     return Container(
       color: colors.surface,
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        14,
-        16,
-        12,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -176,7 +231,7 @@ class _AnswerCardState extends ConsumerState<AnswerCard> {
 
                           const SizedBox(width: 12),
 
-                          _CommentAction(
+                          CommentAction(
                             label: 'Upvote',
                             isActive: _isUpvoted,
                             activeColor: Colors.deepOrange,
@@ -185,7 +240,7 @@ class _AnswerCardState extends ConsumerState<AnswerCard> {
 
                           const SizedBox(width: 12),
 
-                          _CommentAction(
+                          CommentAction(
                             label: 'Downvote',
                             isActive: _isDownvoted,
                             activeColor: Colors.blue,
@@ -194,12 +249,34 @@ class _AnswerCardState extends ConsumerState<AnswerCard> {
 
                           const SizedBox(width: 12),
 
-                          _CommentAction(
+                          CommentAction(
                             label: 'Delete',
                             isActive: false,
                             activeColor: colors.error,
                             onTap: _handleDelete,
                           ),
+
+                          if (!_isCheckingOwner && _isQuestionOwner) ...[
+                            const SizedBox(width: 12),
+
+                            CommentAction(
+                              label: widget.answer.isApproved
+                                  ? 'Unaccept'
+                                  : 'Accept',
+                              isActive: widget.answer.isApproved,
+                              activeColor: colors.secondary,
+                              onTap: _handleAccept,
+                            ),
+                          ] else ...[
+                            const SizedBox(width: 12),
+
+                            CommentAction(
+                              label: isMarked ? 'Unmark' : 'Mark',
+                              isActive: isMarked,
+                              activeColor: colors.secondary,
+                              onTap: () => _handleMark(isMarked),
+                            ),
+                          ],
 
                           const Spacer(),
 
@@ -228,14 +305,13 @@ class _AnswerCardState extends ConsumerState<AnswerCard> {
 
                     if (_upvotes != 0) ...[
                       const SizedBox(height: 6),
+
                       Row(
                         children: [
-                          Icon(
-                            Icons.thumb_up,
-                            size: 13,
-                            color: colors.primary,
-                          ),
+                          Icon(Icons.thumb_up, size: 13, color: colors.primary),
+
                           const SizedBox(width: 4),
+
                           Text(
                             '$_upvotes',
                             style: TextStyle(
@@ -255,44 +331,8 @@ class _AnswerCardState extends ConsumerState<AnswerCard> {
 
           const SizedBox(height: 12),
 
-          Divider(
-            height: 1,
-            color: colors.outlineVariant,
-          ),
+          Divider(height: 1, color: colors.outlineVariant),
         ],
-      ),
-    );
-  }
-}
-
-class _CommentAction extends StatelessWidget {
-  const _CommentAction({
-    required this.label,
-    required this.isActive,
-    required this.activeColor,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isActive;
-  final Color activeColor;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.dalleniColors;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: isActive
-              ? activeColor
-              : colors.onSurfaceVariant,
-        ),
       ),
     );
   }

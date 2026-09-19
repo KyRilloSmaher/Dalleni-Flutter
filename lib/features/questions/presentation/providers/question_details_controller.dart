@@ -2,31 +2,43 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/question_entity.dart';
 import 'questions_providers.dart';
-
 class QuestionDetailsState {
   const QuestionDetailsState({
     required this.isLoading,
     this.errorMessage,
     required this.answers,
+    required this.markedAnswers,
   });
 
   final bool isLoading;
   final String? errorMessage;
   final List<Answer> answers;
 
-  factory QuestionDetailsState.initial() =>
-      const QuestionDetailsState(isLoading: true, answers: []);
+  /// answerId -> whether current user marked this answer
+  final Map<String, bool> markedAnswers;
+
+  factory QuestionDetailsState.initial() {
+    return const QuestionDetailsState(
+      isLoading: true,
+      answers: [],
+      markedAnswers: {},
+    );
+  }
 
   QuestionDetailsState copyWith({
     bool? isLoading,
     String? errorMessage,
     List<Answer>? answers,
+    Map<String, bool>? markedAnswers,
     bool clearError = false,
   }) {
     return QuestionDetailsState(
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      errorMessage: clearError
+          ? null
+          : errorMessage ?? this.errorMessage,
       answers: answers ?? this.answers,
+      markedAnswers: markedAnswers ?? this.markedAnswers,
     );
   }
 }
@@ -143,7 +155,66 @@ class QuestionDetailsController
       state = state.copyWith(answers: originalAnswers);
     }
   }
+
+  Future<void> toggleAcceptAnswer({
+    required String answerId,
+    required bool isAccepted,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final repository = ref.read(answersRepositoryProvider);
+
+      final success = isAccepted
+          ? await repository.unacceptAnswer(answerId)
+          : await repository.acceptAnswer(answerId);
+
+      if (success) {
+        await _fetchAnswers(_questionId);
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: isAccepted
+              ? 'Failed to unaccept answer'
+              : 'Failed to accept answer',
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  Future<void> toggleMarkAnswer({
+    required String answerId,
+    required bool shouldMark,
+  }) async {
+    final oldValue = state.markedAnswers[answerId] ?? false;
+
+    final updatedMarks = {...state.markedAnswers, answerId: shouldMark};
+
+    // Optimistic UI
+    state = state.copyWith(markedAnswers: updatedMarks);
+
+    try {
+      final repository = ref.read(answersRepositoryProvider);
+
+      final success = shouldMark
+          ? await repository.markAnswer(answerId)
+          : await repository.unmarkAnswer(answerId);
+
+      if (!success) {
+        state = state.copyWith(
+          markedAnswers: {...state.markedAnswers, answerId: oldValue},
+        );
+      }
+    } catch (_) {
+      state = state.copyWith(
+        markedAnswers: {...state.markedAnswers, answerId: oldValue},
+      );
+    }
+  }
 }
+
 
 final questionDetailsControllerProvider =
     NotifierProviderFamily<

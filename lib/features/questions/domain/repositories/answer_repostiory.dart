@@ -8,6 +8,9 @@ abstract class AnswersRepository {
     required String questionId,
   });
   Future<bool> voteAnswer(String id, int type);
-  Future<bool> acceptAnswer(String answerId, String questionId);
+  Future<bool> acceptAnswer(String answerId);
+  Future<bool> unacceptAnswer(String answerId);
     Future<bool> deleteAnswer(String answerId);
+     Future<bool> markAnswer(String answerId);
+   Future<bool> unmarkAnswer(String answerId);
 }
