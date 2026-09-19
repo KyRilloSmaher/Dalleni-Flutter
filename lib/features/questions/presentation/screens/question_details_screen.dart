@@ -1,3 +1,4 @@
+import 'package:dalleni/features/questions/presentation/widgets/fb_post_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -114,12 +115,7 @@ class _QuestionDetailsScreenState extends ConsumerState<QuestionDetailsScreen> {
           // ANSWERS
           // =========================
           if (state.isLoading)
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: AppLoadingState(),
-              ),
-            )
+            const SliverToBoxAdapter(child: FbFeedSkeletonList(count: 4))
           else if (state.errorMessage != null)
             SliverToBoxAdapter(
               child: Padding(
@@ -172,6 +168,7 @@ class _QuestionDetailsScreenState extends ConsumerState<QuestionDetailsScreen> {
                 return AnswerCard(
                   answer: answer,
                   questionId: widget.question.id,
+                  questionuserId: widget.question.userId,
                 );
               }, childCount: state.answers.length),
             ),

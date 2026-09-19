@@ -10,7 +10,11 @@ abstract class AnswersRemoteDataSource {
   Future<bool> createAnswer(AnswerModel answer);
   Future<bool> deleteAnswer(String answer);
   Future<bool> voteAnswer(String id, int type);
-  Future<bool> acceptAnswer(String answerId, String questionId);
+  Future<bool> acceptAnswer(String answerId);
+  Future<bool> unacceptAnswer(String answerId);
+   Future<bool> markAnswer(String answerId);
+   Future<bool> unmarkAnswer(String answerId);
+
 }
 
 class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
@@ -66,11 +70,9 @@ class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
     }
   }
 
-  Future<bool> deleteAnswer(String answerId)async{
+  Future<bool> deleteAnswer(String answerId) async {
     try {
-      final response = await _dio.delete(
-        '/answers/${answerId}/delete'
-      );
+      final response = await _dio.delete('/answers/${answerId}/delete');
       final apiResponse = ApiResponse<bool>.fromJson(
         response.data ?? <String, dynamic>{},
         fromJsonT: (json) => json as bool?,
@@ -84,7 +86,6 @@ class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
     } on ApiException catch (e) {
       throw ServerFailure(e.message);
     }
-
   }
 
   @override
@@ -106,20 +107,70 @@ class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
   }
 
   @override
-  Future<bool> acceptAnswer(String answerId, String questionId) async {
+  Future<bool> acceptAnswer(String answerId) async {
     try {
-      final response = await _dio.post(
-        '/questions/accept-answer/$answerId',
-        queryParameters: {'questionId': questionId},
-      );
+      final response = await _dio.post('/answers/$answerId/accept-answer');
       final apiResponse = ApiResponse<bool>.fromJson(
         response.data ?? <String, dynamic>{},
         fromJsonT: (json) => json as bool? ?? true,
       );
 
       return apiResponse.succeeded;
-    } on DioException catch (error) {
-      throw mapDioException(error);
+    } on DioException catch (e) {
+      throw ServerFailure(mapDioException(e).message);
+    } on ApiException catch (e) {
+      throw ServerFailure(e.message);
+    }
+  }
+
+  @override
+  Future<bool> unacceptAnswer(String answerId) async {
+    try {
+      final response = await _dio.post('/answers/$answerId/unaccept-answer');
+      final apiResponse = ApiResponse<bool>.fromJson(
+        response.data ?? <String, dynamic>{},
+        fromJsonT: (json) => json as bool? ?? true,
+      );
+
+      return apiResponse.succeeded;
+    } on DioException catch (e) {
+      throw ServerFailure(mapDioException(e).message);
+    } on ApiException catch (e) {
+      throw ServerFailure(e.message);
+    }
+  }
+
+  @override
+  Future<bool> markAnswer(String answerId) async {
+     try {
+      final response = await _dio.post('/answers/$answerId/mark-as-successful');
+      final apiResponse = ApiResponse<bool>.fromJson(
+        response.data ?? <String, dynamic>{},
+        fromJsonT: (json) => json as bool? ?? true,
+      );
+
+      return apiResponse.succeeded;
+    } on DioException catch (e) {
+      throw ServerFailure(mapDioException(e).message);
+    } on ApiException catch (e) {
+      throw ServerFailure(e.message);
+    }
+  }
+
+  @override
+  Future<bool> unmarkAnswer(String answerId) async{
+try {
+      final response = await _dio.post('/answers/$answerId/unmark-as-successful');
+      final apiResponse = ApiResponse<bool>.fromJson(
+        response.data ?? <String, dynamic>{},
+        fromJsonT: (json) => json as bool? ?? true,
+      );
+
+      return apiResponse.succeeded;
+    } on DioException catch (e) {
+      throw ServerFailure(mapDioException(e).message);
+    } on ApiException catch (e) {
+      throw ServerFailure(e.message);
     }
   }
 }
