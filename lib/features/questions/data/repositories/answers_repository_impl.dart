@@ -1,3 +1,5 @@
+import 'package:dalleni/features/questions/domain/repositories/answer_repostiory.dart';
+
 import '../../domain/entities/question_entity.dart';
 import '../../domain/repositories/questions_repository.dart';
 import '../datasources/answers_remote_data_source.dart';
@@ -31,6 +33,11 @@ class AnswersRepositoryImpl implements AnswersRepository {
       createdAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
     );
     return _remoteDataSource.createAnswer(model);
+  }
+
+  @override
+  Future<bool> deleteAnswer(String answerId) {
+    return _remoteDataSource.deleteAnswer(answerId);
   }
 
   @override

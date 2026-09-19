@@ -82,6 +82,9 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> restoreSession() async {
+    print(
+      '[AUTH DEBUG] AuthRepositoryImpl.restoreSession() (instance: ${identityHashCode(_localStorageService)})',
+    );
     final accessToken = _localStorageService.getToken();
     if (accessToken == null || accessToken.isEmpty) {
       return;
@@ -94,16 +97,19 @@ class AuthRepositoryImpl implements AuthRepository {
         final storedRefreshToken = _localStorageService.getRefreshToken();
 
         if (storedAccessToken == null || storedRefreshToken == null) {
+          print('[AUTH DEBUG] Proactive refresh due on restoreSession but tokens missing. Calling logout().');
           await logout();
           return;
         }
 
         try {
+          print('[AUTH DEBUG] Proactive refresh due on restoreSession. Executing refreshToken().');
           await refreshToken(
             accessToken: storedAccessToken,
             refreshToken: storedRefreshToken,
           );
-        } catch (_) {
+        } catch (e) {
+          print('[AUTH DEBUG] Proactive refresh failed on restoreSession: $e. Calling logout().');
           await logout();
         }
       },
@@ -112,6 +118,9 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
+    print(
+      '[AUTH DEBUG] AuthRepositoryImpl.logout() called (instance: ${identityHashCode(_localStorageService)})',
+    );
     try {
       await _remoteDataSource.logout();
     } catch (_) {
@@ -150,6 +159,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> _persistSession(AuthSession session) async {
     await _localStorageService.saveToken(session.accessToken);
     await _localStorageService.saveRefreshToken(session.refreshToken);
+    print(
+      '[AUTH DEBUG] AFTER SAVE ACCESS: ${session.accessToken.isNotEmpty} (instance: ${identityHashCode(_localStorageService)})',
+    );
+    print(
+      '[AUTH DEBUG] AFTER SAVE REFRESH: ${session.refreshToken.isNotEmpty} (instance: ${identityHashCode(_localStorageService)})',
+    );
 
     final userId = JwtUtils.extractUserId(session.accessToken);
     if (userId != null && userId.isNotEmpty) {
@@ -162,16 +177,19 @@ class AuthRepositoryImpl implements AuthRepository {
         final latestAccessToken = _localStorageService.getToken();
         final latestRefreshToken = _localStorageService.getRefreshToken();
         if (latestAccessToken == null || latestRefreshToken == null) {
+          print('[AUTH DEBUG] Proactive refresh due but tokens missing. Calling logout().');
           await logout();
           return;
         }
 
         try {
+          print('[AUTH DEBUG] Proactive refresh due. Executing refreshToken().');
           await refreshToken(
             accessToken: latestAccessToken,
             refreshToken: latestRefreshToken,
           );
-        } catch (_) {
+        } catch (e) {
+          print('[AUTH DEBUG] Proactive refresh failed: $e. Calling logout().');
           await logout();
         }
       },

@@ -1,3 +1,4 @@
+import 'package:dalleni/features/questions/presentation/providers/saved_questions_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,6 +20,8 @@ class CategoryQuestionsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    print('categoryId CategoryQuestionsScreen = ${categoryId}');
+    print('categoryName CategoryQuestionsScreen= ${categoryName}');
     final state = ref.watch(categoryQuestionsControllerProvider(categoryId));
     final colors = context.dalleniColors;
 
@@ -45,7 +48,7 @@ class CategoryQuestionsScreen extends ConsumerWidget {
                   .refresh(),
               child: ListView.separated(
                 padding: const EdgeInsets.only(
-                  top: kToolbarHeight + 40,
+                  top: 50,
                   bottom: 40,
                   left: 16,
                   right: 16,
@@ -57,6 +60,15 @@ class CategoryQuestionsScreen extends ConsumerWidget {
                   final question = state.questions[index];
                   return QuestionCard(
                     question: question,
+                    isSaved: ref.watch(
+                      savedQuestionsControllerProvider.select(
+                        (state) =>
+                            state.savedRecordIds.containsKey(question.id),
+                      ),
+                    ),
+                    onSaveToggle: () => ref
+                        .read(savedQuestionsControllerProvider.notifier)
+                        .toggleSave(question),
                     onUpvote: () => ref
                         .read(
                           categoryQuestionsControllerProvider(
@@ -71,18 +83,16 @@ class CategoryQuestionsScreen extends ConsumerWidget {
                           ).notifier,
                         )
                         .downvoteQuestion(question.id),
-                    onCategoryTap: (id, name) {
-                      // Already in category view, if it's a different one, push new
-                      if (id != categoryId) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => CategoryQuestionsScreen(
-                              categoryId: id,
-                              categoryName: name,
-                            ),
+
+                    onCategoryTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CategoryQuestionsScreen(
+                            categoryId: categoryId,
+                            categoryName: categoryName,
                           ),
-                        );
-                      }
+                        ),
+                      );
                     },
                   );
                 },

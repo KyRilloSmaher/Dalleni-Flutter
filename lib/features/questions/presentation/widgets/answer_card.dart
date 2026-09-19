@@ -1,31 +1,30 @@
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
 
 import '../../../../core/theme/dalleni_theme.dart';
 import '../../domain/entities/question_entity.dart';
+import '../providers/question_details_controller.dart';
 
-class AnswerCard extends StatefulWidget {
+class AnswerCard extends ConsumerStatefulWidget {
   const AnswerCard({
     super.key,
     required this.answer,
-    this.onUpvote,
-    this.onDownvote,
-    this.onReply,
+    required this.questionId,
   });
 
   final Answer answer;
-  final VoidCallback? onUpvote;
-  final VoidCallback? onDownvote;
-  final VoidCallback? onReply;
+  final String questionId;
 
   @override
-  State<AnswerCard> createState() => _AnswerCardState();
+  ConsumerState<AnswerCard> createState() => _AnswerCardState();
 }
 
-class _AnswerCardState extends State<AnswerCard> {
-  // Local optimistic state
+class _AnswerCardState extends ConsumerState<AnswerCard> {
   bool _isUpvoted = false;
   bool _isDownvoted = false;
+
   late int _upvotes;
 
   @override
@@ -35,33 +34,59 @@ class _AnswerCardState extends State<AnswerCard> {
   }
 
   void _handleUpvote() {
-    if (widget.onUpvote != null) {
-      setState(() {
-        _isUpvoted = !_isUpvoted;
-        if (_isUpvoted) {
+    final controller = ref.read(
+      questionDetailsControllerProvider(widget.questionId).notifier,
+    );
+
+    setState(() {
+      if (_isUpvoted) {
+        _isUpvoted = false;
+        _upvotes--;
+      } else {
+        _isUpvoted = true;
+
+        if (_isDownvoted) {
           _isDownvoted = false;
           _upvotes++;
         } else {
-          _upvotes--;
+          _upvotes++;
         }
-      });
-      widget.onUpvote!();
-    }
+      }
+    });
+
+    controller.upvoteAnswer(widget.answer.id);
   }
 
   void _handleDownvote() {
-    if (widget.onDownvote != null) {
-      setState(() {
-        _isDownvoted = !_isDownvoted;
-        if (_isDownvoted) {
+    final controller = ref.read(
+      questionDetailsControllerProvider(widget.questionId).notifier,
+    );
+
+    setState(() {
+      if (_isDownvoted) {
+        _isDownvoted = false;
+        _upvotes++;
+      } else {
+        _isDownvoted = true;
+
+        if (_isUpvoted) {
           _isUpvoted = false;
           _upvotes--;
         } else {
-          _upvotes++;
+          _upvotes--;
         }
-      });
-      widget.onDownvote!();
-    }
+      }
+    });
+
+    controller.downvoteAnswer(widget.answer.id);
+  }
+
+  void _handleDelete() {
+    final controller = ref.read(
+      questionDetailsControllerProvider(widget.questionId).notifier,
+    );
+
+    controller.deleteComment(widget.answer.id);
   }
 
   @override
@@ -69,138 +94,204 @@ class _AnswerCardState extends State<AnswerCard> {
     final colors = context.dalleniColors;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: widget.answer.isApproved
-            ? colors.secondary.withOpacity(0.05)
-            : colors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: widget.answer.isApproved
-            ? Border(
-                right: BorderSide(color: colors.secondary, width: 4),
-                left: BorderSide.none,
-                top: BorderSide.none,
-                bottom: BorderSide.none,
-              )
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+      color: colors.surface,
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        14,
+        16,
+        12,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.answer.isApproved)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: colors.surfaceContainerHighest,
+                child: Icon(
+                  Icons.person,
+                  color: colors.onSurfaceVariant,
+                  size: 19,
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.check_circle_rounded,
-                      color: colors.secondary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      "إجابة معتمدة",
-                      style: TextStyle(
-                        color: colors.secondary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        height: 1.0,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.answer.authorName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: colors.onSurface,
+                              fontSize: 14,
+                            ),
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          Text(
+                            widget.answer.content,
+                            style: TextStyle(
+                              color: colors.onSurface,
+                              height: 1.45,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+
+                    const SizedBox(height: 5),
+
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Row(
+                        children: [
+                          Text(
+                            intl.DateFormat.MMMd().format(
+                              widget.answer.timestamp,
+                            ),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          _CommentAction(
+                            label: 'Upvote',
+                            isActive: _isUpvoted,
+                            activeColor: Colors.deepOrange,
+                            onTap: _handleUpvote,
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          _CommentAction(
+                            label: 'Downvote',
+                            isActive: _isDownvoted,
+                            activeColor: Colors.blue,
+                            onTap: _handleDownvote,
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          _CommentAction(
+                            label: 'Delete',
+                            isActive: false,
+                            activeColor: colors.error,
+                            onTap: _handleDelete,
+                          ),
+
+                          const Spacer(),
+
+                          if (widget.answer.isApproved)
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 15,
+                                  color: colors.secondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Approved',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.secondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    if (_upvotes != 0) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.thumb_up,
+                            size: 13,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$_upvotes',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: colors.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.person,
-                    color: colors.onSurfaceVariant,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  widget.answer.authorName,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                Text(
-                  intl.DateFormat.yMMMd().format(widget.answer.timestamp),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              widget.answer.content,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                height: 1.5,
-                color: colors.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                InkWell(
-                  onTap: _handleUpvote,
-                  child: Icon(
-                    Icons.keyboard_arrow_up_rounded,
-                    color: _isUpvoted
-                        ? Colors.deepOrange
-                        : colors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '$_upvotes',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _isUpvoted
-                        ? Colors.deepOrange
-                        : _isDownvoted
-                        ? Colors.blue
-                        : colors.onSurface,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                InkWell(
-                  onTap: _handleDownvote,
-                  child: Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: _isDownvoted ? Colors.blue : colors.onSurfaceVariant,
-                  ),
-                ),
+            ],
+          ),
 
-                const Spacer(),
+          const SizedBox(height: 12),
 
-                TextButton.icon(
-                  onPressed: widget.onReply,
-                  icon: Icon(
-                    Icons.reply_rounded,
-                    size: 16,
-                    color: colors.primary,
-                  ),
-                  label: Text("Reply", style: TextStyle(color: colors.primary)),
-                ),
-              ],
-            ),
-          ],
+          Divider(
+            height: 1,
+            color: colors.outlineVariant,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommentAction extends StatelessWidget {
+  const _CommentAction({
+    required this.label,
+    required this.isActive,
+    required this.activeColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isActive;
+  final Color activeColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.dalleniColors;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: isActive
+              ? activeColor
+              : colors.onSurfaceVariant,
         ),
       ),
     );

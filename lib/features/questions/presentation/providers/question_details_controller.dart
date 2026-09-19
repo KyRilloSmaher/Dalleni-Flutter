@@ -57,6 +57,55 @@ class QuestionDetailsController
 
   Future<void> refresh() => _fetchAnswers(_questionId);
 
+  Future<void> createComment(String content) async {
+    final trimmedContent = content.trim();
+
+    if (trimmedContent.isEmpty) return;
+
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final repository = ref.read(answersRepositoryProvider);
+
+      final success = await repository.createAnswer(
+        content: trimmedContent,
+        questionId: _questionId,
+      );
+
+      if (success) {
+        await _fetchAnswers(_questionId);
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Failed to create comment',
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  Future<void> deleteComment(String answerId) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final repository = ref.read(answersRepositoryProvider);
+
+      final success = await repository.deleteAnswer(answerId);
+
+      if (success) {
+        await _fetchAnswers(_questionId);
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Failed to delete comment',
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
   Future<void> upvoteAnswer(String answerId) async {
     final originalAnswers = [...state.answers];
 
@@ -81,7 +130,7 @@ class QuestionDetailsController
 
     final updatedAnswers = state.answers.map((a) {
       if (a.id == answerId) {
-        return a.copyWith(upVotes: a.upVotes - 1);
+        return a.copyWith(downVotes: a.downVotes + 1);
       }
       return a;
     }).toList();
