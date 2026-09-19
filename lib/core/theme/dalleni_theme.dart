@@ -353,6 +353,7 @@ class DalleniColors {
     required this.onErrorContainer,
     required this.primaryGlow,
     required this.tertiaryGlow,
+    required this.backgroundappbar,
   });
 
   final Color primary;
@@ -408,7 +409,7 @@ class DalleniColors {
   final Color onErrorContainer;
   final Color primaryGlow;
   final Color tertiaryGlow;
-
+  final Color backgroundappbar;
   static const dark = DalleniColors(
     primary: Color(0xFFbcff5f),
     primaryDim: Color(0xFF95e400),
@@ -431,6 +432,7 @@ class DalleniColors {
     onTertiaryFixed: Color(0xFF00163b),
     onTertiaryFixedVariant: Color(0xFF00377b),
     background: Color(0xFF0e0e0e),
+    backgroundappbar: Color(0xFF181818),
     surface: Color(0xFF0e0e0e),
     surfaceDim: Color(0xFF0e0e0e),
     surfaceBright: Color(0xFF2c2c2c),
@@ -487,6 +489,7 @@ class DalleniColors {
     onTertiaryFixed: Color(0xFF00163b),
     onTertiaryFixedVariant: Color(0xFF00377b),
     background: Color(0xFFfafafa),
+    backgroundappbar: Color(0xFFFFFFFF),
     surface: Color(0xFFfafafa),
     surfaceDim: Color(0xFFe8e8e8),
     surfaceBright: Color(0xFFffffff),

@@ -1,3 +1,4 @@
+import 'package:dalleni/core/error/failure.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/models/api_response.dart';
@@ -181,14 +182,18 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
         '/questions',
         data: question.toCreateJson(),
       );
-      final apiResponse = ApiResponse<bool>.fromJson(
+      final apiResponse = ApiResponse<String>.fromJson(
         response.data ?? <String, dynamic>{},
-        fromJsonT: (json) => json as bool? ?? true,
+        fromJsonT: (json) => json as String? ?? "",
       );
 
       return apiResponse.succeeded;
-    } on DioException catch (error) {
-      throw mapDioException(error);
+    } on DioException catch (e) {
+      throw ServerFailure(
+        mapDioException(e).errors?.values.first.toString() ?? "",
+      );
+    } on ApiException catch (e) {
+      throw ServerFailure(e.message);
     }
   }
 

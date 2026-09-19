@@ -87,116 +87,84 @@ class _AppTextFieldState extends State<AppTextField> {
           ),
           const SizedBox(height: 8),
         ],
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCirc,
-          decoration: BoxDecoration(
-            color: colors.surfaceContainerHigh.withValues(
-              alpha: isFocused ? 0.94 : 0.78,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isFocused ? colors.primary : colors.outlineVariant,
-              width: 1.5,
-            ),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: <Color>[
-                colors.surfaceContainerHighest.withValues(alpha: 0.95),
-                colors.surfaceContainerLow.withValues(alpha: 0.86),
-              ],
-            ),
-            boxShadow: isFocused
-                ? [
-                    BoxShadow(
-                      color: colors.primaryGlow,
-                      blurRadius: 24,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 8),
-                    ),
-                  ]
-                : [],
+        TextFormField(
+          controller: widget.controller,
+          focusNode: _effectiveFocusNode,
+          obscureText: _isObscured,
+          autofillHints: widget.autofillHints,
+          keyboardType: widget.keyboardType,
+          textInputAction: widget.textInputAction,
+          validator: widget.validator,
+          onFieldSubmitted: widget.onSubmitted,
+          onChanged: widget.onChanged,
+          maxLines: widget.maxLines,
+          style: TextStyle(
+            color: colors.onSurface,
+            fontWeight: FontWeight.w500,
           ),
-          child: TextFormField(
-            controller: widget.controller,
-            focusNode: _effectiveFocusNode,
-            obscureText: _isObscured,
-            autofillHints: widget.autofillHints,
-            keyboardType: widget.keyboardType,
-            textInputAction: widget.textInputAction,
-            validator: widget.validator,
-            onFieldSubmitted: widget.onSubmitted,
-            onChanged: widget.onChanged,
-            maxLines: widget.maxLines,
-            style: TextStyle(
-              color: colors.onSurface,
-              fontWeight: FontWeight.w500,
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            hintStyle: TextStyle(
+              color: colors.onSurfaceVariant.withValues(alpha: 0.72),
             ),
-            decoration: InputDecoration(
-              hintText: widget.hintText,
-              hintStyle: TextStyle(
-                color: colors.onSurfaceVariant.withValues(alpha: 0.72),
-              ),
-              prefixIcon: widget.prefixIcon != null
-                  ? Padding(
-                      padding: EdgeInsets.only(
-                        bottom: widget.maxLines > 1 ? 70.0 : 0,
+            prefixIcon: widget.prefixIcon != null
+                ? Padding(
+                    padding: EdgeInsets.only(
+                      bottom: widget.maxLines > 1 ? 70.0 : 0,
+                    ),
+                    child: IconTheme(
+                      data: IconThemeData(
+                        color: isFocused
+                            ? colors.primary
+                            : colors.onSurfaceVariant,
                       ),
-                      child: IconTheme(
-                        data: IconThemeData(
-                          color: isFocused
-                              ? colors.primary
-                              : colors.onSurfaceVariant,
-                        ),
-                        child: widget.prefixIcon!,
-                      ),
-                    )
-                  : null,
-              suffixIcon: showSuffix
-                  ? Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 8),
-                      child: widget.enableObscureToggle
-                          ? IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isObscured = !_isObscured;
-                                });
-                              },
-                              icon: Icon(
-                                _isObscured
-                                    ? Icons.visibility_off_rounded
-                                    : Icons.visibility_rounded,
-                                color: isFocused
-                                    ? colors.primary
-                                    : colors.onSurfaceVariant,
-                              ),
-                            )
-                          : IconTheme(
-                              data: IconThemeData(
-                                color: isFocused
-                                    ? colors.primary
-                                    : colors.onSurfaceVariant,
-                              ),
-                              child: widget.suffixIcon!,
+                      child: widget.prefixIcon!,
+                    ),
+                  )
+                : null,
+            suffixIcon: showSuffix
+                ? Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 8),
+                    child: widget.enableObscureToggle
+                        ? IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _isObscured = !_isObscured;
+                              });
+                            },
+                            icon: Icon(
+                              _isObscured
+                                  ? Icons.visibility_off_rounded
+                                  : Icons.visibility_rounded,
+                              color: isFocused
+                                  ? colors.primary
+                                  : colors.onSurfaceVariant,
                             ),
-                    )
-                  : null,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide(color: colors.error),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide(color: colors.error, width: 1.5),
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: widget.maxLines > 1 ? 18 : 16,
-              ),
+                          )
+                        : IconTheme(
+                            data: IconThemeData(
+                              color: isFocused
+                                  ? colors.primary
+                                  : colors.onSurfaceVariant,
+                            ),
+                            child: widget.suffixIcon!,
+                          ),
+                  )
+                : null,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide(color: colors.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide(color: colors.error, width: 1.5),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: widget.maxLines > 1 ? 18 : 16,
             ),
           ),
         ),
