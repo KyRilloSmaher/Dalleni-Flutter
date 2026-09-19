@@ -1,15 +1,17 @@
+import 'package:dalleni/features/questions/presentation/widgets/ask_header.dart';
+import 'package:dalleni/features/questions/presentation/widgets/question_composer.dart';
+import 'package:dalleni/features/questions/presentation/widgets/section_title.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/dalleni_theme.dart';
 import '../../../../core/localization/app_localizations.dart';
-import '../../../../core/widgets/common_glass_app_bar.dart';
+import '../../../../core/theme/dalleni_theme.dart';
 import '../../../../core/widgets/animated_funky_drawer.dart';
-import '../../../../core/widgets/state_widgets.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/common_glass_app_bar.dart';
+import '../../../../core/widgets/state_widgets.dart';
 import '../providers/ask_question_controller.dart';
-import '../../data/models/category_model.dart';
+import '../widgets/category_selector.dart';
 
 class AskQuestionScreen extends ConsumerStatefulWidget {
   const AskQuestionScreen({super.key});
@@ -19,359 +21,151 @@ class AskQuestionScreen extends ConsumerStatefulWidget {
 }
 
 class _AskQuestionScreenState extends ConsumerState<AskQuestionScreen> {
-  final TextEditingController _queryController = TextEditingController();
-  final TextEditingController _descController = TextEditingController();
-  final FocusNode _queryFocusNode = FocusNode();
-  final FocusNode _descFocusNode = FocusNode();
-  String? _selectedCategoryId;
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
 
-  // Static suggestions as per user request (until a specific endpoint is provided)
-  final List<String> _suggestions = [
-    'كيف أجدد رخصة القيادة؟',
-    'ما هي خطوات نقل ملكية المركبة؟',
-    'إصدار سجل تجاري جديد',
-  ];
+  final _titleFocusNode = FocusNode();
+  final _descriptionFocusNode = FocusNode();
+
+  String? _selectedCategoryId;
 
   @override
   void dispose() {
-    _queryController.dispose();
-    _descController.dispose();
-    _queryFocusNode.dispose();
-    _descFocusNode.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _titleFocusNode.dispose();
+    _descriptionFocusNode.dispose();
     super.dispose();
   }
 
-  void _handleSubmit() {
-    final title = _queryController.text.trim();
+  void _submitQuestion() {
+    final title = _titleController.text.trim();
+
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.l10n.translate('askErrorNoTitle') ?? 'Please enter a title',
-          ),
-        ),
+      _showError(
+        context.l10n.translate('askErrorNoTitle') ?? 'Please enter a question',
       );
       return;
     }
 
     final state = ref.read(askQuestionControllerProvider);
+
     final categoryId =
         _selectedCategoryId ??
-        (state.categories.isNotEmpty ? state.categories[0].id : '');
+        (state.categories.isNotEmpty ? state.categories.first.id : '');
 
     ref
         .read(askQuestionControllerProvider.notifier)
         .submitQuestion(
           title: title,
-          content: _descController.text.trim(),
+          content: _descriptionController.text.trim(),
           categoryId: categoryId,
-          tags: [], // Could be expanded later
+          tags: const [],
         );
+  }
+
+  void _selectCategory(String categoryId) {
+    setState(() {
+      _selectedCategoryId = categoryId;
+    });
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.dalleniColors;
-    final state = ref.watch(askQuestionControllerProvider);
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
     final l10n = context.l10n;
+    final state = ref.watch(askQuestionControllerProvider);
 
-    // Success and Error listeners
     ref.listen(askQuestionControllerProvider, (previous, next) {
       if (next.isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.translate('askSuccessMessage') ?? 'Success'),
-            backgroundColor: Colors
-                .green, // Fix: Use theme colors if available, but SnackBar defaults are often handled by scaffoldMessenger
-          ),
-        );
-        _queryController.clear();
-        _descController.clear();
+        _showSuccess(l10n.translate('askSuccessMessage') ?? 'Question posted');
+
+        _titleController.clear();
+        _descriptionController.clear();
+
         ref.read(askQuestionControllerProvider.notifier).resetSuccess();
       }
+
       if (next.errorMessage != null &&
           next.errorMessage != previous?.errorMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.errorMessage!),
-            backgroundColor: colors.error,
-          ),
-        );
+        _showError(next.errorMessage!);
       }
     });
 
     return Scaffold(
       backgroundColor: colors.background,
-      extendBodyBehindAppBar: true,
       drawer: const AnimatedFunkyDrawer(),
       appBar: CommonGlassAppBar(title: l10n.translate('navAsk') ?? 'Ask'),
-      body: Stack(
-        children: [
-          // Background Glow
-          Positioned(
-            top: -100,
-            left: -50,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors.primary.withOpacity(0.15),
-              ),
-            ),
-          ),
+      body: state.isLoading
+          ? const AppLoadingState()
+          : SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AskHeader(colors: colors, theme: theme),
+                    const SizedBox(height: 10),
+                    SectionTitle(title: 'Category', colors: colors),
 
-          SafeArea(
-            child: state.isLoading
-                ? const AppLoadingState()
-                : SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
+                    const SizedBox(height: 10),
+
+                    CategorySelector(
+                      categories: state.categories,
+                      selectedCategoryId: _selectedCategoryId,
+                      colors: colors,
+                      onCategorySelected: _selectCategory,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildHeroSection(colors, textTheme, l10n),
-                        const SizedBox(height: 32),
 
-                        AppTextField(
-                          controller: _queryController,
-                          focusNode: _queryFocusNode,
-                          hintText:
-                              l10n.translate('askQueryHint') ??
-                              'What are you looking for?',
-                          prefixIcon: const Icon(Icons.search_rounded),
-                        ),
+                    const SizedBox(height: 20),
 
-                        const SizedBox(height: 24),
-                        _buildSmartSuggestions(colors, textTheme, l10n),
-
-                        const SizedBox(height: 24),
-                        _buildCategoryChips(colors, state),
-
-                        const SizedBox(height: 24),
-                        AppTextField(
-                          controller: _descController,
-                          focusNode: _descFocusNode,
-                          hintText:
-                              l10n.translate('askDetailsHint') ??
-                              'Add more details...',
-                          prefixIcon: const Icon(Icons.description_outlined),
-                          maxLines: 4,
-                        ),
-
-                        const SizedBox(height: 48),
-                        AppButton(
-                          label: state.isSubmitting
-                              ? (l10n.translate('askSubmitting') ??
-                                    'Sending...')
-                              : (l10n.translate('askSubmitButton') ?? 'Submit'),
-                          isLoading: state.isSubmitting,
-                          icon: state.isSubmitting
-                              ? null
-                              : Icon(
-                                  Icons.send_rounded,
-                                  color: colors.onPrimary,
-                                  size: 20,
-                                ),
-                          onPressed: _handleSubmit,
-                        ),
-
-                        const SizedBox(height: 100),
-                      ],
+                    QuestionComposer(
+                      colors: colors,
+                      theme: theme,
+                      titleController: _titleController,
+                      descriptionController: _descriptionController,
+                      titleFocusNode: _titleFocusNode,
+                      descriptionFocusNode: _descriptionFocusNode,
                     ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildHeroSection(
-    DalleniColors colors,
-    TextTheme textTheme,
-    AppLocalizations l10n,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: colors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.primary.withOpacity(0.3)),
-          ),
-          child: Text(
-            l10n.translate('askHeroBadge') ?? 'ASSISTANT',
-            style: textTheme.labelSmall?.copyWith(
-              color: colors.primary,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          l10n.translate('askHeroTitle') ?? "Ask about any service...",
-          style: textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w900,
-            color: colors.onSurface,
-            height: 1.2,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          l10n.translate('askHeroSubtitle') ??
-              "We are here to simplify procedures and guide you step by step.",
-          style: textTheme.bodyLarge?.copyWith(
-            color: colors.onSurfaceVariant.withOpacity(0.8),
-            height: 1.6,
-          ),
-        ),
-      ],
-    );
-  }
+                    const SizedBox(height: 20),
 
-  Widget _buildSmartSuggestions(
-    DalleniColors colors,
-    TextTheme textTheme,
-    AppLocalizations l10n,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.auto_awesome, size: 18, color: colors.primary),
-            const SizedBox(width: 8),
-            Text(
-              l10n.translate('askSmartSuggestions') ?? "Smart Suggestions",
-              style: textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Column(
-          children: _suggestions.map((suggestion) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: colors.surfaceContainerLow.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colors.outlineVariant.withOpacity(0.2),
-                ),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  highlightColor: colors.primary.withOpacity(0.1),
-                  splashColor: colors.primary.withOpacity(0.2),
-                  onTap: () {
-                    setState(() {
-                      _queryController.text = suggestion;
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: AppButton(
+                        label: state.isSubmitting
+                            ? l10n.translate('askSubmitting') ?? 'Posting...'
+                            : l10n.translate('askSubmitButton') ??
+                                  'Ask Question',
+                        isLoading: state.isSubmitting,
+                        icon: state.isSubmitting
+                            ? null
+                            : Icon(
+                                Icons.send_rounded,
+                                color: colors.onPrimary,
+                                size: 20,
+                              ),
+                        onPressed: _submitQuestion,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            suggestion,
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colors.onSurface,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 14,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryChips(DalleniColors colors, AskQuestionState state) {
-    if (state.categories.isEmpty) return const SizedBox.shrink();
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: state.categories.map((category) {
-          final isSelected =
-              _selectedCategoryId == category.id ||
-              (_selectedCategoryId == null &&
-                  state.categories.indexOf(category) == 0);
-          return Padding(
-            padding: const EdgeInsetsDirectional.only(end: 8.0),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedCategoryId = category.id),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? colors.primary
-                      : colors.surfaceContainerHighest.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isSelected
-                        ? colors.primary
-                        : colors.outlineVariant.withOpacity(0.3),
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: colors.primary.withOpacity(0.3),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : [],
-                ),
-                child: Text(
-                  category.name,
-                  style: TextStyle(
-                    color: isSelected
-                        ? colors.onPrimary
-                        : colors.onSurfaceVariant,
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                  ),
+                  ],
                 ),
               ),
             ),
-          );
-        }).toList(),
-      ),
     );
   }
 }

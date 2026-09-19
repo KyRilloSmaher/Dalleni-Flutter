@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/dalleni_theme.dart';
 
 class AppButton extends StatelessWidget {
@@ -23,91 +24,96 @@ class AppButton extends StatelessWidget {
   final Color? backgroundColor;
   final Color? foregroundColor;
   final Color? borderColor;
+
+  // Kept for API compatibility.
   final Color? glowColor;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.dalleniColors;
-    final resolvedBackgroundColor = backgroundColor ?? colors.primary;
-    final resolvedForegroundColor = foregroundColor ?? colors.onPrimary;
-    final resolvedBorderColor = borderColor ?? resolvedBackgroundColor;
-    final resolvedGlowColor = glowColor ?? colors.primaryGlow;
 
-    final child = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (isLoading)
-          SizedBox(
-            height: 20,
-            width: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: resolvedForegroundColor,
+    final background = backgroundColor ?? colors.primary;
+    final foreground = foregroundColor ?? colors.onPrimary;
+    final border = borderColor ?? colors.primary;
+
+    final isDisabled = onPressed == null || isLoading;
+
+    final content = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      child: isLoading
+          ? SizedBox(
+              key: const ValueKey('loading'),
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: foreground,
+              ),
+            )
+          : Row(
+              key: const ValueKey('content'),
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  IconTheme(
+                    data: IconThemeData(size: 19, color: foreground),
+                    child: icon!,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
-          )
-        else ...[
-          if (icon != null) ...[icon!, const SizedBox(width: 8)],
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ],
     );
 
     if (isOutlined) {
-      return OutlinedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: resolvedBorderColor),
-          backgroundColor: resolvedBackgroundColor,
-          foregroundColor: resolvedForegroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+      return SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: OutlinedButton(
+          onPressed: isDisabled ? null : onPressed,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: foreground,
+            backgroundColor: Colors.transparent,
+            side: BorderSide(
+              color: isDisabled ? border.withValues(alpha: 0.35) : border,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 18),
+          child: content,
         ),
-        child: child,
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: onPressed != null && !isLoading
-            ? [
-                BoxShadow(
-                  color: resolvedGlowColor,
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ]
-            : [],
-      ),
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
       child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style:
-            ElevatedButton.styleFrom(
-              backgroundColor: resolvedBackgroundColor,
-              foregroundColor: resolvedForegroundColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              elevation: 0,
-            ).copyWith(
-              backgroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.disabled)) {
-                  return resolvedBackgroundColor.withValues(alpha: 0.5);
-                }
-                return resolvedBackgroundColor;
-              }),
-            ),
-        child: child,
+        onPressed: isDisabled ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: foreground,
+          disabledBackgroundColor: background.withValues(alpha: 0.45),
+          disabledForegroundColor: foreground.withValues(alpha: 0.75),
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
+        child: content,
       ),
     );
   }
