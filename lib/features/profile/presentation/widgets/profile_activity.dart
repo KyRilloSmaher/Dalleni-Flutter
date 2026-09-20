@@ -1,3 +1,4 @@
+import 'package:dalleni/features/profile/presentation/screens/question_user_screen.dart';
 import 'package:dalleni/features/profile/presentation/widgets/activity_tile.dart';
 import 'package:flutter/material.dart';
 
@@ -67,7 +68,11 @@ class ProfileActivity extends StatelessWidget {
             title: 'My Questions',
             subtitle: '${profile.questionsCount} questions',
             onTap: () {
-              // TODO: Navigate to My Questions.
+              Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const QuestionsUserScreen(),
+                        ),
+                      );
             },
           ),
         ],

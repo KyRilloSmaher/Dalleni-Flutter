@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,9 +32,7 @@ class ProfileBody extends ConsumerWidget {
       return AppErrorState(
         message: errorMessage!,
         onRetry: () {
-          ref
-              .read(profileControllerProvider.notifier)
-              .refreshProfile();
+          ref.read(profileControllerProvider.notifier).refreshProfile();
         },
       );
     }
@@ -49,21 +46,14 @@ class ProfileBody extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () {
-        return ref
-            .read(profileControllerProvider.notifier)
-            .refreshProfile();
+        return ref.read(profileControllerProvider.notifier).refreshProfile();
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(
-          top: kToolbarHeight + 32,
-          bottom: 100,
-        ),
+        padding: const EdgeInsets.only(top: kToolbarHeight + 32, bottom: 100),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 900,
-            ),
+            constraints: const BoxConstraints(maxWidth: 900),
             child: Column(
               children: [
                 ProfileHeader(
@@ -81,9 +71,7 @@ class ProfileBody extends ConsumerWidget {
 
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ProfileStats(
-                    profile: profile!,
-                  ),
+                  child: ProfileStats(profile: profile!),
                 ),
 
                 const SizedBox(height: 12),
@@ -109,4 +97,3 @@ class ProfileBody extends ConsumerWidget {
     );
   }
 }
-

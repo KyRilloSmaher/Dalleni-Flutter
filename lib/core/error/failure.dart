@@ -2,7 +2,7 @@ abstract class Failure {
   const Failure(this.message, {this.statusCode});
 
   final String message;
-  final int? statusCode;
+  final String? statusCode;
 
   @override
   String toString() => message;

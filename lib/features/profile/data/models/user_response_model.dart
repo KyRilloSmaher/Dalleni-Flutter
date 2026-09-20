@@ -1,3 +1,5 @@
+import 'package:dalleni/features/questions/data/models/question_model.dart';
+
 import '../../domain/entities/user_profile.dart';
 
 class UserResponseDto extends UserProfile {
@@ -39,6 +41,29 @@ class UserResponseDto extends UserProfile {
                   '',
             )
           : null,
+    );
+  }
+}
+
+class QuestionUserModel extends QuestionUser {
+  const QuestionUserModel({
+    required super.id,
+    required super.userId,
+    required super.questionId,
+    required super.savedAt,
+    required super.question,
+  });
+
+  factory QuestionUserModel.fromJson(Map<String, dynamic> json) {
+    final question = QuestionModel.fromJson(json);
+    return QuestionUserModel(
+      id: json['id']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      questionId: json['questionId']?.toString() ?? '',
+      savedAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '')?.toUtc() ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      question: question,
     );
   }
 }

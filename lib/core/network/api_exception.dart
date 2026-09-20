@@ -5,7 +5,7 @@ class ApiException implements Exception {
   const ApiException({required this.message, this.statusCode, this.errors});
 
   final String message;
-  final int? statusCode;
+  final String? statusCode;
   final Map<String, List<String>>? errors;
 
   /// Get validation error for a specific field.
@@ -63,7 +63,7 @@ ApiException mapDioException(DioException e) {
 
     return ApiException(
       message: data['message'] ?? 'Bad request',
-      statusCode: 400,
+      statusCode: "400",
       errors: (data['errorsBag'] as Map?)?.map(
         (k, v) => MapEntry(k.toString(), List<String>.from(v)),
       ),
