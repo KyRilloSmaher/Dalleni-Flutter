@@ -1,36 +1,41 @@
 import 'dart:io';
 
+import 'package:dalleni/features/questions/domain/entities/question_entity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_exception.dart';
-import '../../../user/data/models/update_user_model.dart';
-import '../../../user/data/repositories/user_repository_impl.dart';
-import '../../../user/domain/entities/user_profile.dart';
+import '../../data/models/update_user_model.dart';
+import '../../data/repositories/user_repository_impl.dart';
+import '../../domain/entities/user_profile.dart';
 
 class ProfileState {
   const ProfileState({
     required this.profile,
     required this.isLoading,
+    required this.savedQuestions,
     this.errorMessage,
   });
 
   final UserProfile? profile;
   final bool isLoading;
   final String? errorMessage;
+  final List<SavedQuestion> savedQuestions;
 
   factory ProfileState.initial() =>
-      const ProfileState(profile: null, isLoading: true);
+      const ProfileState(profile: null, isLoading: true, savedQuestions: []);
 
   ProfileState copyWith({
     UserProfile? profile,
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
+    List<SavedQuestion>? savedQuestions,
   }) {
     return ProfileState(
       profile: profile ?? this.profile,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+  savedQuestions: savedQuestions ?? this.savedQuestions,
     );
   }
 }
@@ -99,6 +104,25 @@ class ProfileController extends Notifier<ProfileState> {
         errorMessage: 'Failed to update image.',
       );
       return false;
+    }
+  }
+
+  Future<void> fetchSavedQuestions() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final savedQuestions = await ref
+          .read(userRepositoryProvider)
+          .getSavedQuestions();
+
+      state = state.copyWith(isLoading: false, savedQuestions: savedQuestions);
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+    } catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to load saved questions.',
+      );
     }
   }
 
