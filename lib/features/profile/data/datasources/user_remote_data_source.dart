@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dalleni/features/questions/data/models/saved_question_model.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/models/api_response.dart';
@@ -12,6 +13,7 @@ abstract class UserRemoteDataSource {
   Future<UserProfile> getProfile();
   Future<String> updateProfileImage(String userId, File profileImage);
   Future<UserProfile> updateProfile(UpdateUserAccount request);
+  Future<List<SavedQuestionModel>> getSavedQuestions();
 }
 
 class UserRemoteDataSourceImpl implements UserRemoteDataSource {
@@ -102,5 +104,31 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
       throw mapDioException(error);
     }
   }
-}
 
+  @override
+  Future<List<SavedQuestionModel>> getSavedQuestions() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/user/saved-questions',
+      );
+      final apiResponse = ApiResponse<List<SavedQuestionModel>>.fromJson(
+        response.data ?? <String, dynamic>{},
+        fromJsonT: (json) => (json as List<dynamic>? ?? <dynamic>[])
+            .whereType<Map<String, dynamic>>()
+            .map(SavedQuestionModel.fromJson)
+            .toList(growable: false),
+      );
+
+      if (!apiResponse.succeeded || apiResponse.data == null) {
+        throw ApiException(
+          message: apiResponse.message,
+          statusCode: apiResponse.statusCode,
+        );
+      }
+
+      return apiResponse.data!;
+    } on DioException catch (error) {
+      throw mapDioException(error);
+    }
+  }
+}

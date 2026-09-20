@@ -7,7 +7,7 @@ import '../../../../core/theme/dalleni_theme.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/app/app_entry_controller.dart';
 import '../../../auth/presentation/providers/login_provider.dart';
-import '../../../user/domain/entities/user_profile.dart';
+import '../../domain/entities/user_profile.dart';
 import '../providers/profile_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {

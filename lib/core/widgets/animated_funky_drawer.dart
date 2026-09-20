@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../features/questions/presentation/screens/saved_questions_screen.dart';
+import '../../features/profile/presentation/screens/saved_questions_screen.dart';
 import '../theme/dalleni_theme.dart';
 
 class AnimatedFunkyDrawer extends StatefulWidget {

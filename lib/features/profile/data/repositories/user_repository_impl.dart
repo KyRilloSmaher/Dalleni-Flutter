@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:dalleni/features/questions/domain/entities/question_entity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/dio_client.dart';
@@ -22,6 +23,11 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<UserProfile> updateProfile(UpdateUserAccount request) =>
       _remoteDataSource.updateProfile(request);
+
+  @override
+  Future<List<SavedQuestion>> getSavedQuestions() {
+    return _remoteDataSource.getSavedQuestions();
+  }
 }
 
 // ─── Riverpod Providers ──────────────────────────────────────────────────────

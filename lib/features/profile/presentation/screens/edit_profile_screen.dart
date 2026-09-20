@@ -9,7 +9,7 @@ import '../../../../core/theme/dalleni_theme.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_text_field.dart';
-import '../../../user/data/models/update_user_model.dart';
+import '../../data/models/update_user_model.dart';
 import '../providers/profile_controller.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
