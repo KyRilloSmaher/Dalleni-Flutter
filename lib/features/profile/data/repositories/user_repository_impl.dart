@@ -28,6 +28,12 @@ class UserRepositoryImpl implements UserRepository {
   Future<List<SavedQuestion>> getSavedQuestions() {
     return _remoteDataSource.getSavedQuestions();
   }
+
+  @override
+  Future<List<QuestionUser>> getQuestionsUser() {
+   
+    return _remoteDataSource.getQuestionUSer();
+  }
 }
 
 // ─── Riverpod Providers ──────────────────────────────────────────────────────

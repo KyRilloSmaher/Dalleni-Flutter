@@ -7,13 +7,14 @@ import '../../../../core/models/api_response.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../domain/entities/user_profile.dart';
 import '../models/update_user_model.dart';
-import '../models/user_response_model.dart';
+import '../models/user_response_model.dart' hide SavedQuestionModel;
 
 abstract class UserRemoteDataSource {
   Future<UserProfile> getProfile();
   Future<String> updateProfileImage(String userId, File profileImage);
   Future<UserProfile> updateProfile(UpdateUserAccount request);
   Future<List<SavedQuestionModel>> getSavedQuestions();
+  Future<List<QuestionUser>> getQuestionUSer();
 }
 
 class UserRemoteDataSourceImpl implements UserRemoteDataSource {
@@ -116,6 +117,31 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
         fromJsonT: (json) => (json as List<dynamic>? ?? <dynamic>[])
             .whereType<Map<String, dynamic>>()
             .map(SavedQuestionModel.fromJson)
+            .toList(growable: false),
+      );
+
+      if (!apiResponse.succeeded || apiResponse.data == null) {
+        throw ApiException(
+          message: apiResponse.message,
+          statusCode: apiResponse.statusCode,
+        );
+      }
+
+      return apiResponse.data!;
+    } on DioException catch (error) {
+      throw mapDioException(error);
+    }
+  }
+
+  @override
+  Future<List<QuestionUserModel>> getQuestionUSer() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/user/questions');
+      final apiResponse = ApiResponse<List<QuestionUserModel>>.fromJson(
+        response.data ?? <String, dynamic>{},
+        fromJsonT: (json) => (json as List<dynamic>? ?? <dynamic>[])
+            .whereType<Map<String, dynamic>>()
+            .map(QuestionUserModel.fromJson)
             .toList(growable: false),
       );
 

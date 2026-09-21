@@ -14,15 +14,21 @@ class ProfileState {
     required this.isLoading,
     required this.savedQuestions,
     this.errorMessage,
+    required this.questionuser,
   });
 
   final UserProfile? profile;
   final bool isLoading;
   final String? errorMessage;
   final List<SavedQuestion> savedQuestions;
+  final List<QuestionUser> questionuser;
 
-  factory ProfileState.initial() =>
-      const ProfileState(profile: null, isLoading: true, savedQuestions: []);
+  factory ProfileState.initial() => const ProfileState(
+    profile: null,
+    isLoading: true,
+    savedQuestions: [],
+    questionuser: [],
+  );
 
   ProfileState copyWith({
     UserProfile? profile,
@@ -30,12 +36,14 @@ class ProfileState {
     String? errorMessage,
     bool clearError = false,
     List<SavedQuestion>? savedQuestions,
+    List<QuestionUser>? questionuser,
   }) {
     return ProfileState(
       profile: profile ?? this.profile,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-  savedQuestions: savedQuestions ?? this.savedQuestions,
+      savedQuestions: savedQuestions ?? this.savedQuestions,
+      questionuser: questionuser ?? this.questionuser,
     );
   }
 }
@@ -116,6 +124,25 @@ class ProfileController extends Notifier<ProfileState> {
           .getSavedQuestions();
 
       state = state.copyWith(isLoading: false, savedQuestions: savedQuestions);
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+    } catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to load saved questions.',
+      );
+    }
+  }
+
+  Future<void> fetchQuestuionUser() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final questionuser = await ref
+          .read(userRepositoryProvider)
+          .getQuestionsUser();
+
+      state = state.copyWith(isLoading: false,questionuser : questionuser);
     } on ApiException catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.message);
     } catch (_) {

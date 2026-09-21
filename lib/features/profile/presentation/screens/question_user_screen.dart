@@ -8,21 +8,21 @@ import '../../../../core/theme/dalleni_theme.dart';
 import '../../../../core/widgets/common_glass_app_bar.dart';
 import '../../../../core/widgets/state_widgets.dart';
 
-class SavedQuestionsScreen extends ConsumerStatefulWidget {
-  const SavedQuestionsScreen({super.key});
+class QuestionsUserScreen extends ConsumerStatefulWidget {
+  const QuestionsUserScreen({super.key});
 
   @override
-  ConsumerState<SavedQuestionsScreen> createState() =>
+  ConsumerState<QuestionsUserScreen> createState() =>
       _SavedQuestionsScreenState();
 }
 
-class _SavedQuestionsScreenState extends ConsumerState<SavedQuestionsScreen> {
+class _SavedQuestionsScreenState extends ConsumerState<QuestionsUserScreen> {
   @override
   void initState() {
     super.initState();
 
     Future.microtask(() {
-      ref.read(profileControllerProvider.notifier).fetchSavedQuestions();
+      ref.read(profileControllerProvider.notifier).fetchQuestuionUser();
     });
   }
 
@@ -34,49 +34,35 @@ class _SavedQuestionsScreenState extends ConsumerState<SavedQuestionsScreen> {
     return Scaffold(
       backgroundColor: colors.background,
       extendBodyBehindAppBar: true,
-      appBar: const CommonGlassAppBar(title: 'My Saved Questions'),
+      appBar: const CommonGlassAppBar(title: 'My Questions'),
       body: _buildBody(context, state),
     );
   }
 
   Widget _buildBody(BuildContext context, ProfileState state) {
-    if (state.isLoading && state.savedQuestions.isEmpty) {
+    if (state.isLoading && state.questionuser.isEmpty) {
       return const AppLoadingState();
     }
 
-    if (state.savedQuestions.isEmpty) {
-      return AppEmptyState(
-        title: 'لا يوجد أسئلة محفوظة',
-        subtitle: 'ابدأ بحفظ الأسئلة التي تهمك للرجوع إليها لاحقاً.',
-      );
+    if (state.questionuser.isEmpty) {
+      return AppEmptyState(title: 'لا يوجد أسئلة', subtitle: '');
     }
 
     return RefreshIndicator(
       onRefresh: () {
         return ref
             .read(profileControllerProvider.notifier)
-            .fetchSavedQuestions();
+            .fetchQuestuionUser();
       },
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, kToolbarHeight + 40, 16, 40),
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: state.savedQuestions.length,
+        itemCount: state.questionuser.length,
         separatorBuilder: (_, __) => const SizedBox(height: 16),
         itemBuilder: (context, index) {
-          final savedQuestion = state.savedQuestions[index];
-
-          return ActivityCard(
-            savedQuestion: savedQuestion,
-            isNeed: true,
-            onRemove: () async {
-              await ref
-                  .read(homeFeedControllerProvider.notifier)
-                  .toggleSaveQuestion(savedQuestion.question);
-              await ref
-                  .read(profileControllerProvider.notifier)
-                  .fetchSavedQuestions();
-            },
-          );
+          final questionuser = state.questionuser[index];
+          print('User Question ${questionuser.question.content} in UI');
+          return ActivityCard(questionUser: questionuser);
         },
       ),
     );

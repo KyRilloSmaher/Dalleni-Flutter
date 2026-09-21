@@ -1,3 +1,5 @@
+import 'package:dalleni/features/questions/domain/entities/question_entity.dart';
+
 class UserProfile {
   const UserProfile({
     required this.id,
@@ -51,4 +53,21 @@ class UserProfile {
       answersCount.hashCode ^
       questionsCount.hashCode ^
       lastLoginAt.hashCode;
+}
+
+
+class QuestionUser {
+  const QuestionUser({
+    required this.id,
+    required this.userId,
+    required this.questionId,
+    required this.savedAt,
+    required this.question,
+  });
+
+  final String id;
+  final String userId;
+  final String questionId;
+  final DateTime savedAt;
+  final Question question;
 }

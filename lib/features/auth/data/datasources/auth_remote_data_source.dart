@@ -277,7 +277,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     return ApiException(
       message: error.message ?? 'Request failed.',
-      statusCode: error.response?.statusCode,
+      //statusCode: error.response?.statusCode,
     );
   }
 }

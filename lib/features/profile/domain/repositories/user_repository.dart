@@ -10,4 +10,5 @@ abstract class UserRepository {
   Future<String> updateProfileImage(String userId, File profileImage);
   Future<UserProfile> updateProfile(UpdateUserAccount request);
   Future<List<SavedQuestion>> getSavedQuestions();
+  Future<List<QuestionUser>> getQuestionsUser();
 }
