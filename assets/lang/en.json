@@ -95,7 +95,7 @@
   "resend": "Resend",
   "backToLogin": "Back to login",
 
-  "navServices": "Services",
+  "navServices": "Official Entities",
   "navAsk": "Ask",
   "navHome": "Home",
   "navChat": "Chat",
@@ -128,5 +128,21 @@
   "askSubmitButton": "Submit Question",
   "askSubmitting": "Sending...",
   "askSuccessMessage": "Your question has been sent successfully",
-  "askErrorNoTitle": "Please enter a question title"
+  "askErrorNoTitle": "Please enter a question title",
+  "officialEntitiesTitle": "Official Entities",
+  "officialEntitiesSubtitle": "Discover official entities and government services available on Dalleni.",
+  "officialEntityDetailsTitle": "Entity Details",
+  "officialEntityServicesTitle": "Available Services",
+  "officialEntityWebsiteButton": "Visit Official Website",
+  "officialEntityVerified": "Verified Entity",
+  "officialEntityServicesCount": "Services",
+  "officialEntityEmptyTitle": "No Official Entities Found",
+  "officialEntityEmptySubtitle": "No official entities are available at this moment.",
+  "serviceAvailable": "Available",
+  "serviceUnavailable": "Unavailable",
+  "serviceFees": "Fees",
+  "serviceFeesFree": "Free",
+  "serviceRequiredDocs": "Required Documents",
+  "serviceRating": "Rating",
+  "serviceNoDocs": "No specific documents required"
 }

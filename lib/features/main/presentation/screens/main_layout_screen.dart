@@ -1,3 +1,4 @@
+import 'package:dalleni/features/official_entities/presentation/screens/official_entities_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/widgets/animated_funky_drawer.dart';
@@ -25,7 +26,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     super.initState();
     // 0: Services, 1: Ask, 2: Home, 3: ChatBot, 4: Profile
     _pages = [
-      const ServicesScreen(),
+      const OfficialEntitiesScreen(),
       const AskQuestionScreen(),
       const HomeFeedScreen(),
       const Center(child: Text('ChatBot Placeholder')),

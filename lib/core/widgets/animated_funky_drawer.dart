@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../features/official_entities/presentation/screens/official_entities_screen.dart';
 import '../../features/profile/presentation/screens/saved_questions_screen.dart';
 import '../theme/dalleni_theme.dart';
 
@@ -14,6 +15,7 @@ class _AnimatedFunkyDrawerState extends State<AnimatedFunkyDrawer>
   late AnimationController _controller;
 
   final List<Map<String, dynamic>> _menuItems = [
+    {'title': 'الجهات الرسمية', 'icon': Icons.account_balance_rounded},
     {'title': 'مشاركاتي', 'icon': Icons.edit_note_rounded},
     {'title': 'إشارات مرجعية', 'icon': Icons.bookmark_border_rounded},
     {'title': 'الإحصائيات', 'icon': Icons.insights_rounded},
@@ -132,7 +134,14 @@ class _AnimatedFunkyDrawerState extends State<AnimatedFunkyDrawer>
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
                           onTap: () {
-                            if (item['title'] == 'إشارات مرجعية') {
+                            if (item['title'] == 'الجهات الرسمية') {
+                              Navigator.of(context).pop(); // Close drawer
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const OfficialEntitiesScreen(),
+                                ),
+                              );
+                            } else if (item['title'] == 'إشارات مرجعية') {
                               Navigator.of(context).pop(); // Close drawer
                               Navigator.of(context).push(
                                 MaterialPageRoute(
