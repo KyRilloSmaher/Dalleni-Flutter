@@ -32,7 +32,7 @@ class ServicesRepositoryImpl implements ServicesRepository {
       final services = await _remoteDataSource.searchServices(keyword);
       return Right(services);
     } on ApiException catch (e) {
-      return Left(ServerFailure(e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(e.message, statusCode: e.statusCode.toString()));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

@@ -15,14 +15,15 @@ class HomeFeedState {
     required this.isRefreshingSavedQuestions,
     required this.areSavedQuestionsReady,
     required this.questions,
-    required this.availableTags,
+    required this.availablecategory,
     required this.savedQuestionIds,
     required this.savedQuestionRecordIds,
     required this.currentPage,
     required this.hasMore,
     required this.searchQuery,
-    this.selectedTag,
+    this.selectedCategory,
     this.errorMessage,
+    this.selectedTag,
   });
 
   final bool isLoading;
@@ -30,12 +31,13 @@ class HomeFeedState {
   final bool isRefreshingSavedQuestions;
   final bool areSavedQuestionsReady;
   final List<Question> questions;
-  final List<QuestionTag> availableTags;
+  final List<QuestionCategory> availablecategory;
   final Set<String> savedQuestionIds;
   final Map<String, String> savedQuestionRecordIds;
   final int currentPage;
   final bool hasMore;
   final String searchQuery;
+  final QuestionCategory? selectedCategory;
   final QuestionTag? selectedTag;
   final String? errorMessage;
 
@@ -46,7 +48,7 @@ class HomeFeedState {
       isRefreshingSavedQuestions: false,
       areSavedQuestionsReady: false,
       questions: <Question>[],
-      availableTags: <QuestionTag>[],
+      availablecategory: <QuestionCategory>[],
       savedQuestionIds: <String>{},
       savedQuestionRecordIds: <String, String>{},
       currentPage: 1,
@@ -64,15 +66,17 @@ class HomeFeedState {
     bool? isRefreshingSavedQuestions,
     bool? areSavedQuestionsReady,
     List<Question>? questions,
-    List<QuestionTag>? availableTags,
+    List<QuestionCategory>? availablecategory,
     Set<String>? savedQuestionIds,
     Map<String, String>? savedQuestionRecordIds,
     int? currentPage,
     bool? hasMore,
     String? searchQuery,
-    QuestionTag? selectedTag,
+    QuestionCategory? selectedCategory,
+    QuestionTag? selectedtag,
     String? errorMessage,
     bool clearSelectedTag = false,
+    bool clearSelectedcategory = false,
     bool clearError = false,
   }) {
     return HomeFeedState(
@@ -83,14 +87,17 @@ class HomeFeedState {
       areSavedQuestionsReady:
           areSavedQuestionsReady ?? this.areSavedQuestionsReady,
       questions: questions ?? this.questions,
-      availableTags: availableTags ?? this.availableTags,
+      availablecategory: availablecategory ?? this.availablecategory,
       savedQuestionIds: savedQuestionIds ?? this.savedQuestionIds,
       savedQuestionRecordIds:
           savedQuestionRecordIds ?? this.savedQuestionRecordIds,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
       searchQuery: searchQuery ?? this.searchQuery,
-      selectedTag: clearSelectedTag ? null : selectedTag ?? this.selectedTag,
+      selectedCategory: clearSelectedcategory
+          ? null
+          : selectedCategory ?? this.selectedCategory,
+      selectedTag: clearSelectedTag ? null : selectedtag ?? this.selectedTag,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
@@ -117,17 +124,19 @@ class HomeFeedController extends Notifier<HomeFeedState> {
     }
     _isBootstrapping = true;
     try {
-      await Future.wait(<Future<void>>[_loadTags(), _loadSavedQuestions()]);
+      await Future.wait(<Future<void>>[_loadCategory(), _loadSavedQuestions()]);
       await refresh();
     } finally {
       _isBootstrapping = false;
     }
   }
 
-  Future<void> _loadTags() async {
+  Future<void> _loadCategory() async {
     try {
-      final tags = await ref.read(questionsRepositoryProvider).getTags();
-      state = state.copyWith(availableTags: tags);
+      final category = await ref
+          .read(questionsRepositoryProvider)
+          .getCategories();
+      state = state.copyWith(availablecategory: category);
     } catch (_) {
       // Keep feed usable even if tags fail.
     }
@@ -225,15 +234,6 @@ class HomeFeedController extends Notifier<HomeFeedState> {
     _searchDebounce = Timer(const Duration(milliseconds: 450), () => refresh());
   }
 
-  Future<void> selectTag(QuestionTag? tag) async {
-    state = state.copyWith(
-      selectedTag: tag,
-      searchQuery: '',
-      clearSelectedTag: tag == null,
-    );
-    await refresh();
-  }
-
   Future<void> upvoteQuestion(String questionId) async {
     await _applyOptimisticVote(questionId: questionId, delta: 1, voteType: 0);
   }
@@ -286,7 +286,8 @@ class HomeFeedController extends Notifier<HomeFeedState> {
 
     _savedStateEpoch++;
     state = state.copyWith(
-      savedQuestionIds: <String>{...state.savedQuestionIds}..remove(question.id),
+      savedQuestionIds: <String>{...state.savedQuestionIds}
+        ..remove(question.id),
       savedQuestionRecordIds: <String, String>{...state.savedQuestionRecordIds}
         ..remove(question.id),
     );
@@ -369,8 +370,35 @@ class HomeFeedController extends Notifier<HomeFeedState> {
     }
   }
 
+  Future<void> selectCategory(QuestionCategory? category) async {
+    state = state.copyWith(
+      selectedCategory: category,
+      searchQuery: '',
+      clearSelectedcategory: category == null,
+      clearSelectedTag: true,
+    );
+    await refresh();
+  }
+
+  Future<void> selecttag(QuestionTag? tag) async {
+    state = state.copyWith(
+      selectedtag: tag,
+      searchQuery: '',
+      clearSelectedTag: tag == null,
+      clearSelectedcategory: true,
+    );
+    await refresh();
+  }
+
   Future<PagedList<Question>> _loadPage({required int pageNumber}) {
     final repository = ref.read(questionsRepositoryProvider);
+    if (state.selectedCategory != null) {
+      return repository.getQuestionsByCategory(
+        categoryId: state.selectedCategory!.id,
+        pageNumber: pageNumber,
+        pageSize: _pageSize,
+      );
+    }
     if (state.selectedTag != null) {
       return repository.getQuestionsByTag(
         tagId: state.selectedTag!.id,

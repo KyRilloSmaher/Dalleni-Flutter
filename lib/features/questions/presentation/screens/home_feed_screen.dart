@@ -133,7 +133,7 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                     ),
 
                   // Horizontal Tag Filter Bar Section
-                  if (state.availableTags.isNotEmpty)
+                  if (state.availablecategory.isNotEmpty)
                     SliverToBoxAdapter(
                       child: Container(
                         color: colors.surface,
@@ -141,10 +141,11 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            TagFilterBar(
-                              selectedTagId: state.selectedTag?.id,
-                              tags: state.availableTags,
-                              onTagSelected: (tag) => controller.selectTag(tag),
+                            CategoryFilterBar(
+                              selectedTagId: state.selectedCategory?.id,
+                              tags: state.availablecategory,
+                              onTagSelected: (tag) =>
+                                  controller.selectCategory(tag),
                             ),
                           ],
                         ),
@@ -165,7 +166,8 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                       child: FbFeedSkeletonList(count: 4),
                     )
                   // Error State
-                  else if (state.errorMessage != null && state.questions.isEmpty)
+                  else if (state.errorMessage != null &&
+                      state.questions.isEmpty)
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: Container(
@@ -183,9 +185,7 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 context.l10n.translate('errorStateTitle'),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
+                                style: Theme.of(context).textTheme.titleLarge
                                     ?.copyWith(fontWeight: FontWeight.bold),
                                 textAlign: TextAlign.center,
                               ),
@@ -193,9 +193,7 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                               Text(
                                 state.errorMessage!,
                                 textAlign: TextAlign.center,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(color: colors.onSurfaceVariant),
                               ),
                               const SizedBox(height: 20),
@@ -225,14 +223,14 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                               Icon(
                                 Icons.dynamic_feed_rounded,
                                 size: 64,
-                                color: colors.onSurfaceVariant.withValues(alpha: 0.5),
+                                color: colors.onSurfaceVariant.withValues(
+                                  alpha: 0.5,
+                                ),
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 context.l10n.translate('homeEmptyTitle'),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
+                                style: Theme.of(context).textTheme.titleLarge
                                     ?.copyWith(fontWeight: FontWeight.bold),
                                 textAlign: TextAlign.center,
                               ),
@@ -240,16 +238,16 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                               Text(
                                 context.l10n.translate('homeEmptySubtitle'),
                                 textAlign: TextAlign.center,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(color: colors.onSurfaceVariant),
                               ),
-                              if (state.selectedTag != null) ...<Widget>[
+                              if (state.selectedCategory != null) ...<Widget>[
                                 const SizedBox(height: 20),
                                 OutlinedButton.icon(
-                                  onPressed: () => controller.selectTag(null),
-                                  icon: const Icon(Icons.filter_alt_off_rounded),
+                                  onPressed: () => controller.selectCategory(null),
+                                  icon: const Icon(
+                                    Icons.filter_alt_off_rounded,
+                                  ),
                                   label: const Text('Clear Filter'),
                                 ),
                               ],
@@ -274,7 +272,8 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                           }
 
                           final question = state.questions[index];
-                          final isLastItem = index == state.questions.length - 1;
+                          final isLastItem =
+                              index == state.questions.length - 1;
 
                           return Column(
                             children: <Widget>[
@@ -294,19 +293,22 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                                       ),
                                 onCategoryTap: () {
                                   print("category id ${question.categoryId}");
-                                  print("category name ${question.categoryName}");
+                                  print(
+                                    "category name ${question.categoryName}",
+                                  );
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (_) => CategoryQuestionsScreen(
-                                        categoryId: question.categoryId??"",
-                                        categoryName: question.categoryName??"",
+                                        categoryId: question.categoryId ?? "",
+                                        categoryName:
+                                            question.categoryName ?? "",
                                       ),
                                     ),
                                   );
                                 },
-                                onTagTap: controller.selectTag,
+                                onTagTap: controller.selecttag,
                               ),
-                   
+
                               if (!isLastItem || state.isLoadingMore)
                                 Container(
                                   height: 8,
@@ -321,9 +323,7 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                       ),
                     ),
 
-                  const SliverPadding(
-                    padding: EdgeInsets.only(bottom: 32),
-                  ),
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
                 ],
               ),
             ),

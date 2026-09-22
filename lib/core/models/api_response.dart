@@ -7,7 +7,7 @@ class ApiResponse<T> {
     required this.data,
   });
 
-  final String statusCode;
+  final int statusCode;
   final bool succeeded;
   final String message;
   final Map<String, List<String>> errorsBag;
@@ -20,7 +20,7 @@ class ApiResponse<T> {
     final errorsBagJson = (json['errorsBag'] as Map<String, dynamic>? ?? {});
 
     return ApiResponse<T>(
-      statusCode: json['statusCode'] as String? ??"",
+      statusCode: json['statusCode'] as int? ??0,
       succeeded: json['succeeded'] as bool? ?? false,
       message: json['message'] as String? ?? '',
       errorsBag: errorsBagJson.map(

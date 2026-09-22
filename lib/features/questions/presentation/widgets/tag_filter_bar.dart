@@ -3,16 +3,16 @@ import 'package:dalleni/core/theme/dalleni_theme.dart';
 import 'package:dalleni/features/questions/domain/entities/question_entity.dart';
 import 'package:flutter/material.dart';
 
-class TagFilterBar extends StatelessWidget {
-  const TagFilterBar({
+class CategoryFilterBar extends StatelessWidget {
+  const CategoryFilterBar({
     required this.selectedTagId,
     required this.tags,
     required this.onTagSelected,
   });
 
   final String? selectedTagId;
-  final List<QuestionTag> tags;
-  final ValueChanged<QuestionTag?> onTagSelected;
+  final List<QuestionCategory> tags;
+  final ValueChanged<QuestionCategory?> onTagSelected;
 
   @override
   Widget build(BuildContext context) {
