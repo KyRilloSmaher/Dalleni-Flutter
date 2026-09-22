@@ -135,5 +135,21 @@
   "askSubmitButton": "إرسال السؤال",
   "askSubmitting": "جاري الإرسال...",
   "askSuccessMessage": "تم إرسال سؤالك بنجاح",
-  "askErrorNoTitle": "يرجى إدخال عنوان للسؤال"
+  "askErrorNoTitle": "يرجى إدخال عنوان للسؤال",
+  "officialEntitiesTitle": "الجهات الرسمية",
+  "officialEntitiesSubtitle": "استكشف الجهات الرسمية والخدمات الحكومية المتاحة في دليل دلّني.",
+  "officialEntityDetailsTitle": "تفاصيل الجهة",
+  "officialEntityServicesTitle": "الخدمات المتاحة",
+  "officialEntityWebsiteButton": "زيارة الموقع الرسمي",
+  "officialEntityVerified": "جهة موثقة",
+  "officialEntityServicesCount": "الخدمات",
+  "officialEntityEmptyTitle": "لا توجد جهات رسمية",
+  "officialEntityEmptySubtitle": "لم يتم العثور على أي جهات رسمية حاليًا.",
+  "serviceAvailable": "متاح",
+  "serviceUnavailable": "غير متاح",
+  "serviceFees": "الرسوم",
+  "serviceFeesFree": "مجاني",
+  "serviceRequiredDocs": "المستندات المطلوبة",
+  "serviceRating": "التقييم",
+  "serviceNoDocs": "لا تتطلب مستندات خاصة"
 }
