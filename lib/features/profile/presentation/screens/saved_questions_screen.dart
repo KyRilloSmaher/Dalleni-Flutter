@@ -1,6 +1,7 @@
 import 'package:dalleni/features/profile/presentation/providers/profile_controller.dart';
 import 'package:dalleni/features/profile/presentation/widgets/activity_card.dart';
 import 'package:dalleni/features/questions/presentation/providers/home_feed_controller.dart';
+import 'package:dalleni/features/questions/presentation/screens/question_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -68,6 +69,13 @@ class _SavedQuestionsScreenState extends ConsumerState<SavedQuestionsScreen> {
           return ActivityCard(
             savedQuestion: savedQuestion,
             isNeed: true,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => QuestionDetailsScreen(question: state.savedQuestions[index].question),
+                ),
+              );
+            },
             onRemove: () async {
               await ref
                   .read(homeFeedControllerProvider.notifier)

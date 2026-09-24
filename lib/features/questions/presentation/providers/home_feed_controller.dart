@@ -18,6 +18,7 @@ class HomeFeedState {
     required this.availablecategory,
     required this.savedQuestionIds,
     required this.savedQuestionRecordIds,
+    required this.questionVoteIds,
     required this.currentPage,
     required this.hasMore,
     required this.searchQuery,
@@ -34,6 +35,7 @@ class HomeFeedState {
   final List<QuestionCategory> availablecategory;
   final Set<String> savedQuestionIds;
   final Map<String, String> savedQuestionRecordIds;
+  final Map<String, String> questionVoteIds;
   final int currentPage;
   final bool hasMore;
   final String searchQuery;
@@ -51,6 +53,7 @@ class HomeFeedState {
       availablecategory: <QuestionCategory>[],
       savedQuestionIds: <String>{},
       savedQuestionRecordIds: <String, String>{},
+      questionVoteIds: <String, String>{},
       currentPage: 1,
       hasMore: true,
       searchQuery: '',
@@ -69,6 +72,7 @@ class HomeFeedState {
     List<QuestionCategory>? availablecategory,
     Set<String>? savedQuestionIds,
     Map<String, String>? savedQuestionRecordIds,
+    Map<String, String>? questionVoteIds,
     int? currentPage,
     bool? hasMore,
     String? searchQuery,
@@ -91,13 +95,14 @@ class HomeFeedState {
       savedQuestionIds: savedQuestionIds ?? this.savedQuestionIds,
       savedQuestionRecordIds:
           savedQuestionRecordIds ?? this.savedQuestionRecordIds,
+      questionVoteIds: questionVoteIds ?? this.questionVoteIds,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
       searchQuery: searchQuery ?? this.searchQuery,
       selectedCategory: clearSelectedcategory
           ? null
           : selectedCategory ?? this.selectedCategory,
-      selectedTag: clearSelectedTag ? null : selectedtag ?? this.selectedTag,
+      selectedTag: clearSelectedTag ? null : selectedtag ?? selectedTag,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
@@ -124,10 +129,25 @@ class HomeFeedController extends Notifier<HomeFeedState> {
     }
     _isBootstrapping = true;
     try {
-      await Future.wait(<Future<void>>[_loadCategory(), _loadSavedQuestions()]);
+      await Future.wait(<Future<void>>[
+        _loadCategory(),
+        _loadSavedQuestions(),
+        _loadQuestionVotes(),
+      ]);
       await refresh();
     } finally {
       _isBootstrapping = false;
+    }
+  }
+
+  Future<void> _loadQuestionVotes() async {
+    try {
+      final voteMap = await ref
+          .read(questionsRepositoryProvider)
+          .getUserQuestionVotes();
+      state = state.copyWith(questionVoteIds: voteMap);
+    } catch (_) {
+      // Keep feed usable even if vote map loading fails
     }
   }
 
@@ -234,14 +254,6 @@ class HomeFeedController extends Notifier<HomeFeedState> {
     _searchDebounce = Timer(const Duration(milliseconds: 450), () => refresh());
   }
 
-  Future<void> upvoteQuestion(String questionId) async {
-    await _applyOptimisticVote(questionId: questionId, delta: 1, voteType: 0);
-  }
-
-  Future<void> downvoteQuestion(String questionId) async {
-    await _applyOptimisticVote(questionId: questionId, delta: -1, voteType: 1);
-  }
-
   Future<void> toggleSaveQuestion(Question question) async {
     if (!state.areSavedQuestionsReady) {
       return;
@@ -339,32 +351,111 @@ class HomeFeedController extends Notifier<HomeFeedState> {
     }
   }
 
+  Future<void> upvoteQuestion(String questionId) async {
+    final index = state.questions.indexWhere((q) => q.id == questionId);
+    if (index == -1) return;
+    final question = state.questions[index];
+
+    await _applyOptimisticVote(
+      questionId: questionId,
+      isCurrentlyUpvoted: question.upVotedByCurrentUser,
+      isCurrentlyDownvoted: question.downVotedByCurrentUser,
+      voteType: 0,
+    );
+  }
+
+  Future<void> downvoteQuestion(String questionId) async {
+    final index = state.questions.indexWhere((q) => q.id == questionId);
+    if (index == -1) return;
+    final question = state.questions[index];
+
+    await _applyOptimisticVote(
+      questionId: questionId,
+      isCurrentlyUpvoted: question.upVotedByCurrentUser,
+      isCurrentlyDownvoted: question.downVotedByCurrentUser,
+      voteType: 1,
+    );
+  }
+
   Future<void> _applyOptimisticVote({
     required String questionId,
-    required int delta,
+    required bool isCurrentlyUpvoted,
+    required bool isCurrentlyDownvoted,
     required int voteType,
   }) async {
     final originalQuestions = state.questions;
+    final originalVoteIds = state.questionVoteIds;
+
+    final isRemovingVote = voteType == 0
+        ? isCurrentlyUpvoted
+        : isCurrentlyDownvoted;
+
+    final newIsUpvoted = !isRemovingVote && voteType == 0;
+    final newIsDownvoted = !isRemovingVote && voteType == 1;
+
+    final updatedVoteIds = Map<String, String>.from(state.questionVoteIds);
+    if (isRemovingVote) {
+      updatedVoteIds.remove(questionId);
+    }
+
     state = state.copyWith(
+      questionVoteIds: updatedVoteIds,
       questions: state.questions
-          .map(
-            (question) => question.id == questionId
-                ? (voteType == 0
-                      ? question.copyWith(upVotes: question.upVotes + delta)
-                      : question.copyWith(
-                          downVotes: question.downVotes + delta.abs(),
-                        ))
-                : question,
-          )
+          .map((question) {
+            if (question.id != questionId) {
+              return question;
+            }
+
+            var upVotes = question.upVotes;
+            var downVotes = question.downVotes;
+
+            // Remove the previous vote.
+            if (isCurrentlyUpvoted && upVotes > 0) {
+              upVotes--;
+            }
+
+            if (isCurrentlyDownvoted && downVotes > 0) {
+              downVotes--;
+            }
+
+            // Add the new vote.
+            if (newIsUpvoted) {
+              upVotes++;
+            }
+
+            if (newIsDownvoted) {
+              downVotes++;
+            }
+
+            return question.copyWith(
+              upVotes: upVotes,
+              downVotes: downVotes,
+              upVotedByCurrentUser: newIsUpvoted,
+              downVotedByCurrentUser: newIsDownvoted,
+            );
+          })
           .toList(growable: false),
     );
+
     try {
-      await ref
-          .read(questionsRepositoryProvider)
-          .voteQuestion(questionId, voteType);
+      if (isRemovingVote) {
+        final voteId = originalVoteIds[questionId];
+        if (voteId != null && voteId.isNotEmpty) {
+          await ref.read(questionsRepositoryProvider).removeVote(voteId);
+        }
+      } else {
+        final success = await ref
+            .read(questionsRepositoryProvider)
+            .voteQuestion(questionId, voteType);
+
+        if (success == true) {
+          await _loadQuestionVotes();
+        }
+      }
     } catch (error) {
       state = state.copyWith(
         questions: originalQuestions,
+        questionVoteIds: originalVoteIds,
         errorMessage: error.toString(),
       );
     }

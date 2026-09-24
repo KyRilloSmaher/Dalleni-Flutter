@@ -21,9 +21,11 @@ class FbPostCard extends StatelessWidget {
   final Question question;
   final bool isDetailsView;
   final bool isSaved;
+
   final VoidCallback? onUpvote;
   final VoidCallback? onDownvote;
   final VoidCallback? onSaveToggle;
+
   final VoidCallback onCategoryTap;
   final void Function(QuestionTag tag)? onTagTap;
 
@@ -36,8 +38,8 @@ class FbPostCard extends StatelessWidget {
       question.createdAt.toLocal(),
     );
 
-    print('Gategory id  ${question.categoryId}');
-    print('Gategory name  ${question.categoryName}');
+    final isUpvoted = question.upVotedByCurrentUser;
+    final isDownvoted = question.downVotedByCurrentUser;
 
     return Container(
       width: double.infinity,
@@ -45,7 +47,9 @@ class FbPostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          // Header Section: User info & Options
+          // ------------------------------------------------------------
+          // Header
+          // ------------------------------------------------------------
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Row(
@@ -65,7 +69,9 @@ class FbPostCard extends StatelessWidget {
                         )
                       : null,
                 ),
+
                 const SizedBox(width: 12),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +87,9 @@ class FbPostCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+
                       const SizedBox(height: 2),
+
                       Row(
                         children: <Widget>[
                           Text(
@@ -91,6 +99,7 @@ class FbPostCard extends StatelessWidget {
                               fontSize: 12,
                             ),
                           ),
+
                           if (question.categoryName != null) ...<Widget>[
                             Padding(
                               padding: const EdgeInsets.symmetric(
@@ -103,6 +112,7 @@ class FbPostCard extends StatelessWidget {
                                 ),
                               ),
                             ),
+
                             GestureDetector(
                               onTap: onCategoryTap,
                               child: Text(
@@ -120,6 +130,7 @@ class FbPostCard extends StatelessWidget {
                     ],
                   ),
                 ),
+
                 IconButton(
                   icon: Icon(
                     Icons.more_horiz_rounded,
@@ -140,7 +151,9 @@ class FbPostCard extends StatelessWidget {
             ),
           ),
 
-          // Main Clickable Post Content Area
+          // ------------------------------------------------------------
+          // Post Content
+          // ------------------------------------------------------------
           InkWell(
             onTap: isDetailsView
                 ? null
@@ -166,9 +179,11 @@ class FbPostCard extends StatelessWidget {
                       height: 1.35,
                     ),
                   ),
+
                   if (question.content != null &&
                       question.content!.trim().isNotEmpty) ...<Widget>[
                     const SizedBox(height: 8),
+
                     Text(
                       question.content!,
                       maxLines: isDetailsView ? null : 4,
@@ -180,8 +195,10 @@ class FbPostCard extends StatelessWidget {
                       ),
                     ),
                   ],
+
                   if (question.tags.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 10),
+
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
@@ -221,13 +238,17 @@ class FbPostCard extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // Engagement Stats Summary Row (Facebook style Likes / Comments / Views)
+          // ------------------------------------------------------------
+          // Engagement Stats
+          // ------------------------------------------------------------
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               children: <Widget>[
                 Icon(Icons.thumb_up_rounded, size: 14, color: colors.primary),
+
                 const SizedBox(width: 4),
+
                 Text(
                   '${question.upVotes}',
                   style: textTheme.bodySmall?.copyWith(
@@ -236,9 +257,12 @@ class FbPostCard extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+
                 const Spacer(),
+
                 Text(
-                  '${question.answersCount} answers  •  ${question.views} views',
+                  '${question.answersCount} answers  •  '
+                  '${question.views} views',
                   style: textTheme.bodySmall?.copyWith(
                     color: colors.onSurfaceVariant,
                     fontSize: 12,
@@ -249,38 +273,47 @@ class FbPostCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 6),
+
           Divider(
             color: colors.outlineVariant.withValues(alpha: 0.4),
             height: 1,
             thickness: 0.8,
           ),
 
-          // Facebook Social Action Row (Upvote, Downvote, Answer, Save)
+          // ------------------------------------------------------------
+          // Social Actions
+          // ------------------------------------------------------------
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             child: Row(
               children: <Widget>[
+                // Upvote
                 Expanded(
-                  child: _FbActionButton(
+                  child: FbActionButton(
                     icon: Icons.thumb_up_alt_outlined,
                     activeIcon: Icons.thumb_up_alt_rounded,
                     label: 'Upvote',
-                    isActive: false,
+                    isActive: isUpvoted,
                     activeColor: colors.primary,
                     onPressed: onUpvote,
                   ),
                 ),
+
+                // Downvote
                 Expanded(
-                  child: _FbActionButton(
+                  child: FbActionButton(
                     icon: Icons.thumb_down_alt_outlined,
+                    activeIcon: Icons.thumb_down_alt_rounded,
                     label: 'Downvote',
-                    isActive: false,
+                    isActive: isDownvoted,
                     activeColor: colors.error,
                     onPressed: onDownvote,
                   ),
                 ),
+
+                // Answer
                 Expanded(
-                  child: _FbActionButton(
+                  child: FbActionButton(
                     icon: Icons.chat_bubble_outline_rounded,
                     label: 'Answer',
                     isActive: false,
@@ -297,8 +330,10 @@ class FbPostCard extends StatelessWidget {
                           },
                   ),
                 ),
+
+                // Save
                 Expanded(
-                  child: _FbActionButton(
+                  child: FbActionButton(
                     icon: isSaved
                         ? Icons.bookmark_rounded
                         : Icons.bookmark_border_rounded,
@@ -317,8 +352,8 @@ class FbPostCard extends StatelessWidget {
   }
 }
 
-class _FbActionButton extends StatelessWidget {
-  const _FbActionButton({
+class FbActionButton extends StatelessWidget {
+  const FbActionButton({
     required this.icon,
     this.activeIcon,
     required this.label,
@@ -340,7 +375,9 @@ class _FbActionButton extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     final iconColor = isActive ? activeColor : colors.onSurfaceVariant;
+
     final textColor = isActive ? activeColor : colors.onSurfaceVariant;
+
     final effectiveIcon = (isActive && activeIcon != null) ? activeIcon! : icon;
 
     return Material(
@@ -354,7 +391,9 @@ class _FbActionButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Icon(effectiveIcon, size: 18, color: iconColor),
+
               const SizedBox(width: 6),
+
               Flexible(
                 child: Text(
                   label,

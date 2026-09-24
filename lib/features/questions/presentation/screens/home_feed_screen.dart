@@ -278,6 +278,7 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                           return Column(
                             children: <Widget>[
                               FbPostCard(
+                                isDetailsView: false,
                                 question: question,
                                 isSaved: state.savedQuestionIds.contains(
                                   question.id,

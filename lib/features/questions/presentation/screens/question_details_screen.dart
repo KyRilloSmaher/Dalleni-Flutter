@@ -1,3 +1,4 @@
+import 'package:dalleni/features/questions/presentation/providers/home_feed_controller.dart';
 import 'package:dalleni/features/questions/presentation/widgets/fb_post_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,9 +23,54 @@ class QuestionDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _QuestionDetailsScreenState extends ConsumerState<QuestionDetailsScreen> {
+  late Question _question;
   final TextEditingController _commentController = TextEditingController();
-
   final FocusNode _commentFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _question = widget.question;
+  }
+
+  void _handleVote(int voteType) {
+    final isCurrentlyUpvoted = _question.upVotedByCurrentUser;
+    final isCurrentlyDownvoted = _question.downVotedByCurrentUser;
+    final isRemovingVote = voteType == 0
+        ? isCurrentlyUpvoted
+        : isCurrentlyDownvoted;
+
+    final newIsUpvoted = !isRemovingVote && voteType == 0;
+    final newIsDownvoted = !isRemovingVote && voteType == 1;
+
+    var upVotes = _question.upVotes;
+    var downVotes = _question.downVotes;
+
+    if (isCurrentlyUpvoted && upVotes > 0) upVotes--;
+    if (isCurrentlyDownvoted && downVotes > 0) downVotes--;
+
+    if (newIsUpvoted) upVotes++;
+    if (newIsDownvoted) downVotes++;
+
+    setState(() {
+      _question = _question.copyWith(
+        upVotes: upVotes,
+        downVotes: downVotes,
+        upVotedByCurrentUser: newIsUpvoted,
+        downVotedByCurrentUser: newIsDownvoted,
+      );
+    });
+
+    if (voteType == 0) {
+      ref
+          .read(homeFeedControllerProvider.notifier)
+          .upvoteQuestion(_question.id);
+    } else {
+      ref
+          .read(homeFeedControllerProvider.notifier)
+          .downvoteQuestion(_question.id);
+    }
+  }
 
   @override
   void dispose() {
@@ -65,14 +111,17 @@ class _QuestionDetailsScreenState extends ConsumerState<QuestionDetailsScreen> {
             child: Hero(
               tag: 'question_${widget.question.id}',
               child: QuestionCard(
-                question: widget.question,
+                isdetailsscreen: true,
+                question: _question,
                 isDetailsView: true,
+                onUpvote: () => _handleVote(0),
+                onDownvote: () => _handleVote(1),
                 onCategoryTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => CategoryQuestionsScreen(
-                        categoryId: widget.question.categoryId ?? "",
-                        categoryName: widget.question.categoryName ?? "",
+                        categoryId: _question.categoryId ?? "",
+                        categoryName: _question.categoryName ?? "",
                       ),
                     ),
                   );

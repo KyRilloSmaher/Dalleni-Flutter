@@ -34,7 +34,10 @@ abstract class QuestionsRepository {
     required List<String> tags,
   });
 
-  Future<bool> voteQuestion(String id, int type);
+  Future<bool?> voteQuestion(String id, int type);
+  Future<bool> removeVote(String voteId);
+  Future<bool> removeQuestion(String id);
+  Future<Map<String, String>> getUserQuestionVotes();
   Future<List<QuestionCategory>> getCategories();
   Future<List<QuestionTag>> getTags({int pageNumber = 1, int pageSize = 20});
   Future<String?> saveQuestion(String questionId, String userId);

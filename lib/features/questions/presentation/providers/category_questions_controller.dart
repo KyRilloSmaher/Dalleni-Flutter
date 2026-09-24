@@ -46,38 +46,51 @@ class CategoryQuestionsController
   Future<void> refresh() => _fetchQuestions();
 
   Future<void> upvoteQuestion(String questionId) async {
-    final originalQuestions = state.questions;
-    state = state.copyWith(
-      questions: originalQuestions
-          .map(
-            (question) => question.id == questionId
-                ? question.copyWith(upVotes: question.upVotes + 1)
-                : question,
-          )
-          .toList(growable: false),
-    );
-
-    try {
-      await ref.read(questionsRepositoryProvider).voteQuestion(questionId, 0);
-    } catch (_) {
-      state = state.copyWith(questions: originalQuestions);
-    }
+    await _applyVote(questionId, 0);
   }
 
   Future<void> downvoteQuestion(String questionId) async {
+    await _applyVote(questionId, 1);
+  }
+
+  Future<void> _applyVote(String questionId, int voteType) async {
     final originalQuestions = state.questions;
+    final index = originalQuestions.indexWhere((q) => q.id == questionId);
+    if (index == -1) return;
+
+    final question = originalQuestions[index];
+    final isCurrentlyUpvoted = question.upVotedByCurrentUser;
+    final isCurrentlyDownvoted = question.downVotedByCurrentUser;
+    final isRemovingVote =
+        voteType == 0 ? isCurrentlyUpvoted : isCurrentlyDownvoted;
+
+    final newIsUpvoted = !isRemovingVote && voteType == 0;
+    final newIsDownvoted = !isRemovingVote && voteType == 1;
+
+    var upVotes = question.upVotes;
+    var downVotes = question.downVotes;
+
+    if (isCurrentlyUpvoted && upVotes > 0) upVotes--;
+    if (isCurrentlyDownvoted && downVotes > 0) downVotes--;
+
+    if (newIsUpvoted) upVotes++;
+    if (newIsDownvoted) downVotes++;
+
+    final updatedQuestion = question.copyWith(
+      upVotes: upVotes,
+      downVotes: downVotes,
+      upVotedByCurrentUser: newIsUpvoted,
+      downVotedByCurrentUser: newIsDownvoted,
+    );
+
     state = state.copyWith(
-      questions: state.questions
-          .map(
-            (question) => question.id == questionId
-                ? question.copyWith(downVotes: question.downVotes + 1)
-                : question,
-          )
+      questions: originalQuestions
+          .map((q) => q.id == questionId ? updatedQuestion : q)
           .toList(growable: false),
     );
 
     try {
-      await ref.read(questionsRepositoryProvider).voteQuestion(questionId, 1);
+      await ref.read(questionsRepositoryProvider).voteQuestion(questionId, voteType);
     } catch (_) {
       state = state.copyWith(questions: originalQuestions);
     }

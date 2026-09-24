@@ -59,6 +59,7 @@ class CategoryQuestionsScreen extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final question = state.questions[index];
                   return QuestionCard(
+                     isdetailsscreen: false,
                     question: question,
                     isSaved: ref.watch(
                       savedQuestionsControllerProvider.select(
@@ -83,7 +84,6 @@ class CategoryQuestionsScreen extends ConsumerWidget {
                           ).notifier,
                         )
                         .downvoteQuestion(question.id),
-
                     onCategoryTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(

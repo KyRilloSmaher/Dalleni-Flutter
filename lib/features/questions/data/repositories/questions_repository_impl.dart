@@ -91,14 +91,31 @@ class QuestionsRepositoryImpl implements QuestionsRepository {
           .toList(growable: false),
       content: content,
       categoryId: categoryId,
+      upVotedByCurrentUser: false,
+      downVotedByCurrentUser: false,
     );
 
     return _remoteDataSource.createQuestion(model);
   }
 
   @override
-  Future<bool> voteQuestion(String id, int type) {
+  Future<bool?> voteQuestion(String id, int type) {
     return _remoteDataSource.voteQuestion(id, type);
+  }
+
+  @override
+  Future<bool> removeVote(String voteId) {
+    return _remoteDataSource.removevote(voteId);
+  }
+
+  @override
+  Future<bool> removeQuestion(String id) {
+    return _remoteDataSource.removevote(id);
+  }
+
+  @override
+  Future<Map<String, String>> getUserQuestionVotes() {
+    return _remoteDataSource.getUserQuestionVotes();
   }
 
   @override
