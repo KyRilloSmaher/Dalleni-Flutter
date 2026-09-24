@@ -61,14 +61,30 @@ ApiException mapDioException(DioException e) {
   if (e.response?.statusCode == 400) {
     final data = e.response?.data;
 
-    return ApiException(
-      message: data['message'] ?? 'Bad request',
-      statusCode: 400,
-      errors: (data['errorsBag'] as Map?)?.map(
-        (k, v) => MapEntry(k.toString(), List<String>.from(v)),
-      ),
-    );
+    if (data is Map) {
+      final errorsBagJson = data['errorsBag'];
+      Map<String, List<String>>? errors;
+      if (errorsBagJson is Map) {
+        errors = errorsBagJson.map(
+          (k, v) => MapEntry(
+            k.toString(),
+            (v as List<dynamic>? ?? <dynamic>[])
+                .map((item) => item.toString())
+                .toList(),
+          ),
+        );
+      }
+
+      return ApiException(
+        message: data['message']?.toString() ?? 'Bad request',
+        statusCode: 400,
+        errors: errors,
+      );
+    }
   }
 
-  return ApiException(message: 'Something went wrong');
+  return ApiException(
+    message: e.message ?? 'Something went wrong',
+    statusCode: e.response?.statusCode,
+  );
 }

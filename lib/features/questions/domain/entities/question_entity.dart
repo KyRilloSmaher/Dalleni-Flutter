@@ -44,6 +44,8 @@ class Question {
     this.authorReputation,
     this.acceptedAnswerId,
     this.answers = const <Answer>[],
+    required this.upVotedByCurrentUser,
+    required this.downVotedByCurrentUser,
   });
 
   final String id;
@@ -52,6 +54,8 @@ class Question {
   final String authorName;
   final int upVotes;
   final int downVotes;
+  final bool upVotedByCurrentUser;
+  final bool downVotedByCurrentUser;
   final int views;
   final int answersCount;
   final bool isClosed;
@@ -79,6 +83,8 @@ class Question {
     String? authorName,
     int? upVotes,
     int? downVotes,
+    bool? upVotedByCurrentUser,
+    bool? downVotedByCurrentUser,
     int? views,
     int? answersCount,
     bool? isClosed,
@@ -99,6 +105,8 @@ class Question {
       authorName: authorName ?? this.authorName,
       upVotes: upVotes ?? this.upVotes,
       downVotes: downVotes ?? this.downVotes,
+      upVotedByCurrentUser: upVotedByCurrentUser ?? this.upVotedByCurrentUser,
+      downVotedByCurrentUser: downVotedByCurrentUser ?? this.downVotedByCurrentUser,
       views: views ?? this.views,
       answersCount: answersCount ?? this.answersCount,
       isClosed: isClosed ?? this.isClosed,

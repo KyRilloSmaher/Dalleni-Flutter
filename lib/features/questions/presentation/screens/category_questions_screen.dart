@@ -83,7 +83,6 @@ class CategoryQuestionsScreen extends ConsumerWidget {
                           ).notifier,
                         )
                         .downvoteQuestion(question.id),
-
                     onCategoryTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(

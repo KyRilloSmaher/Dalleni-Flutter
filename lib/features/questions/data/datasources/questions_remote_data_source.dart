@@ -35,7 +35,9 @@ abstract class QuestionsRemoteDataSource {
 
   Future<QuestionModel> getQuestion(String id);
   Future<bool> createQuestion(QuestionModel question);
-  Future<bool> voteQuestion(String id, int type);
+  Future<bool?> voteQuestion(String id, int type);
+  Future<bool> removevote(String voteId);
+  Future<Map<String, String>> getUserQuestionVotes();
   Future<List<CategoryModel>> getCategories();
   Future<List<TagModel>> getTags({int pageNumber = 1, int pageSize = 20});
   Future<String?> saveQuestion(String questionId, String userId);
@@ -206,10 +208,64 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
       );
       final apiResponse = ApiResponse<bool>.fromJson(
         response.data ?? <String, dynamic>{},
-        fromJsonT: (json) => json as bool? ?? true,
+        fromJsonT: (json) => json is bool ? json : true,
       );
 
       return apiResponse.succeeded;
+    } on DioException catch (error) {
+      throw mapDioException(error);
+    }
+  }
+
+  @override
+  Future<bool> removevote(String voteId) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/votes/$voteId/remove',
+      );
+      final apiResponse = ApiResponse<bool>.fromJson(
+        response.data ?? <String, dynamic>{},
+        fromJsonT: (json) => json is bool ? json : true,
+      );
+
+      return apiResponse.succeeded;
+    } on DioException catch (error) {
+      throw mapDioException(error);
+    }
+  }
+
+  @override
+  Future<Map<String, String>> getUserQuestionVotes() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/votes/user/votes/questions',
+      );
+      final apiResponse = ApiResponse<List<dynamic>>.fromJson(
+        response.data ?? <String, dynamic>{},
+        fromJsonT: (json) => json as List<dynamic>? ?? <dynamic>[],
+      );
+
+      final result = <String, String>{};
+      if (apiResponse.succeeded && apiResponse.data != null) {
+        for (final item in apiResponse.data!) {
+          if (item is Map<String, dynamic>) {
+            final voteId =
+                item['voteId']?.toString() ?? item['id']?.toString();
+            final questionObj = item['question'];
+            final questionId = (questionObj is Map)
+                ? questionObj['id']?.toString()
+                : item['questionId']?.toString();
+
+            if (voteId != null &&
+                voteId.isNotEmpty &&
+                questionId != null &&
+                questionId.isNotEmpty) {
+              result[questionId] = voteId;
+            }
+          }
+        }
+      }
+      return result;
     } on DioException catch (error) {
       throw mapDioException(error);
     }
@@ -380,4 +436,5 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
     }
     return null;
   }
+
 }

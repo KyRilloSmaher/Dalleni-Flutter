@@ -1,3 +1,4 @@
+import 'package:dalleni/features/questions/presentation/widgets/fb_post_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/dalleni_theme.dart';
@@ -33,6 +34,8 @@ class QuestionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.dalleniColors;
     final textTheme = Theme.of(context).textTheme;
+    final isUpvoted = question.upVotedByCurrentUser;
+    final isDownvoted = question.downVotedByCurrentUser;
 
     final createdAtLabel = DateFormat.yMMMd().add_jm().format(
       question.createdAt.toLocal(),
@@ -168,7 +171,7 @@ class QuestionCard extends StatelessWidget {
                         color: colors.primary,
                         fontWeight: FontWeight.w700,
                       ),
-                      onPressed: onCategoryTap 
+                      onPressed: onCategoryTap,
                     ),
                   ],
 
@@ -261,6 +264,37 @@ class QuestionCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           Divider(height: 1, color: colors.outlineVariant),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: Row(
+              children: <Widget>[
+                // Upvote
+                Expanded(
+                  child: FbActionButton(
+                    icon: Icons.thumb_up_alt_outlined,
+                    activeIcon: Icons.thumb_up_alt_rounded,
+                    label: 'Upvote',
+                    isActive: isUpvoted,
+                    activeColor: colors.primary,
+                    onPressed: onUpvote,
+                  ),
+                ),
+
+                // Downvote
+                Expanded(
+                  child: FbActionButton(
+                    icon: Icons.thumb_down_alt_outlined,
+                    activeIcon: Icons.thumb_down_alt_rounded,
+                    label: 'Downvote',
+                    isActive: isDownvoted,
+                    activeColor: colors.error,
+                    onPressed: onDownvote,
+                  ),
+                ),
+              ],
+            ),
+          ),
 
           // Facebook-like separator between posts.
           Container(height: 8, color: colors.surfaceContainerLowest),

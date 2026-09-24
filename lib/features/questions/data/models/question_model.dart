@@ -21,6 +21,8 @@ class QuestionModel extends Question {
     super.authorReputation,
     super.acceptedAnswerId,
     super.answers,
+    required super.upVotedByCurrentUser,
+    required super.downVotedByCurrentUser,
   });
 
   factory QuestionModel.fromJson(Map<String, dynamic> json) {
@@ -51,6 +53,8 @@ class QuestionModel extends Question {
           .whereType<Map<String, dynamic>>()
           .map(AnswerModel.fromJson)
           .toList(growable: false),
+      upVotedByCurrentUser: json['upVotedByCurrentUser'] as bool ?? false,
+      downVotedByCurrentUser: json['downVotedByCurrentUser'] as bool ?? false,
     );
   }
 
