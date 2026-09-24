@@ -7,6 +7,7 @@ class AskQuestionState {
   const AskQuestionState({
     required this.categories,
     required this.isLoading,
+    this.selectedCategoryId,
     this.errorMessage,
     this.isSubmitting = false,
     this.isSuccess = false,
@@ -14,6 +15,7 @@ class AskQuestionState {
 
   final List<QuestionCategory> categories;
   final bool isLoading;
+  final String? selectedCategoryId;
   final String? errorMessage;
   final bool isSubmitting;
   final bool isSuccess;
@@ -24,6 +26,7 @@ class AskQuestionState {
   AskQuestionState copyWith({
     List<QuestionCategory>? categories,
     bool? isLoading,
+    String? selectedCategoryId,
     String? errorMessage,
     bool? isSubmitting,
     bool? isSuccess,
@@ -32,6 +35,7 @@ class AskQuestionState {
     return AskQuestionState(
       categories: categories ?? this.categories,
       isLoading: isLoading ?? this.isLoading,
+      selectedCategoryId: selectedCategoryId ?? this.selectedCategoryId,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isSuccess: isSuccess ?? this.isSuccess,
@@ -56,6 +60,31 @@ class AskQuestionController extends Notifier<AskQuestionState> {
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
+  }
+
+  void selectCategory(String categoryId) {
+    state = state.copyWith(selectedCategoryId: categoryId);
+  }
+
+  Future<void> submitQuestionWithValidation({
+    required String title,
+    required String content,
+  }) async {
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) {
+      state = state.copyWith(errorMessage: 'Please enter a question');
+      return;
+    }
+
+    final categoryId = state.selectedCategoryId ??
+        (state.categories.isNotEmpty ? state.categories.first.id : '');
+
+    await submitQuestion(
+      title: trimmedTitle,
+      content: content.trim(),
+      categoryId: categoryId,
+      tags: const [],
+    );
   }
 
   Future<void> submitQuestion({

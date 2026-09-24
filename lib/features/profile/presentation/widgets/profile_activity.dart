@@ -58,7 +58,7 @@ class ProfileActivity extends StatelessWidget {
             icon: Icons.bookmark_rounded,
             iconColor: colors.primary,
             title: 'Saved Questions',
-            subtitle: 'Questions you saved for later',
+        
             onTap: onSavedQuestionsTap,
           ),
 
@@ -66,7 +66,7 @@ class ProfileActivity extends StatelessWidget {
             icon: Icons.help_outline_rounded,
             iconColor: colors.secondary,
             title: 'My Questions',
-            subtitle: '${profile.questionsCount} questions',
+            
             onTap: () {
               Navigator.of(context).push(
                         MaterialPageRoute(

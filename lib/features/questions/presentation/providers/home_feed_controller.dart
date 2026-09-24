@@ -22,6 +22,7 @@ class HomeFeedState {
     required this.currentPage,
     required this.hasMore,
     required this.searchQuery,
+    this.isSearchExpanded = false,
     this.selectedCategory,
     this.errorMessage,
     this.selectedTag,
@@ -39,6 +40,7 @@ class HomeFeedState {
   final int currentPage;
   final bool hasMore;
   final String searchQuery;
+  final bool isSearchExpanded;
   final QuestionCategory? selectedCategory;
   final QuestionTag? selectedTag;
   final String? errorMessage;
@@ -57,6 +59,7 @@ class HomeFeedState {
       currentPage: 1,
       hasMore: true,
       searchQuery: '',
+      isSearchExpanded: false,
     );
   }
 
@@ -76,6 +79,7 @@ class HomeFeedState {
     int? currentPage,
     bool? hasMore,
     String? searchQuery,
+    bool? isSearchExpanded,
     QuestionCategory? selectedCategory,
     QuestionTag? selectedtag,
     String? errorMessage,
@@ -99,6 +103,7 @@ class HomeFeedState {
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
       searchQuery: searchQuery ?? this.searchQuery,
+      isSearchExpanded: isSearchExpanded ?? this.isSearchExpanded,
       selectedCategory: clearSelectedcategory
           ? null
           : selectedCategory ?? this.selectedCategory,
@@ -220,6 +225,7 @@ class HomeFeedController extends Notifier<HomeFeedState> {
         currentPage: pagedQuestions.pageNumber,
         hasMore: pagedQuestions.hasNextPage,
       );
+      debugPrint('controller state.questions count: ${state.questions.length}');
     } catch (error) {
       state = state.copyWith(isLoading: false, errorMessage: error.toString());
     }
@@ -246,6 +252,14 @@ class HomeFeedController extends Notifier<HomeFeedState> {
         errorMessage: error.toString(),
       );
     }
+  }
+
+  void toggleSearchExpanded() {
+    final newExpanded = !state.isSearchExpanded;
+    if (!newExpanded && state.searchQuery.isNotEmpty) {
+      updateSearchQuery('');
+    }
+    state = state.copyWith(isSearchExpanded: newExpanded);
   }
 
   void updateSearchQuery(String value) {

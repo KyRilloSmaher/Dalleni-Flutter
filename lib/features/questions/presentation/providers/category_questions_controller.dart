@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'home_feed_controller.dart';
@@ -15,17 +16,12 @@ class CategoryQuestionsController
   }
 
   Future<void> _fetchQuestions() async {
-    print('Iam Here');
-
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       final pagedResponse = await ref
           .read(questionsRepositoryProvider)
           .getQuestionsByCategory(categoryId: _categoryId);
-
-      print('Iam Here Again');
-      print('Questions count = ${pagedResponse.items.length}');
 
       state = state.copyWith(
         isLoading: false,
@@ -34,10 +30,10 @@ class CategoryQuestionsController
         hasMore: pagedResponse.hasNextPage,
       );
 
-      print('State updated successfully');
+      debugPrint('Category controller state.questions count: ${state.questions.length}');
     } catch (error, stackTrace) {
-      print('ERROR = $error');
-      print('STACK = $stackTrace');
+      debugPrint('ERROR = $error');
+      debugPrint('STACK = $stackTrace');
 
       state = state.copyWith(isLoading: false, errorMessage: error.toString());
     }

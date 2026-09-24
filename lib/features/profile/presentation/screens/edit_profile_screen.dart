@@ -1,15 +1,14 @@
-import 'dart:io';
-
+import 'package:dalleni/features/profile/presentation/widgets/prifile_Avatar_picker.dart';
+import 'package:dalleni/features/profile/presentation/widgets/profie_info_card.dart';
+import 'package:dalleni/features/profile/presentation/widgets/profile_form_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/dalleni_theme.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_text_field.dart';
-import '../../data/models/update_user_model.dart';
 import '../providers/profile_controller.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -22,30 +21,26 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  late TextEditingController _firstNameController;
-  late TextEditingController _lastNameController;
-  late TextEditingController _userNameController;
-  late TextEditingController _phoneController;
-  // Note: Bio is currently not in the PUT endpoint UpdateUserAccount body, but we simulate it.
-  late TextEditingController _bioController;
-
-  File? _selectedImage;
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  late final TextEditingController _userNameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _bioController;
 
   @override
   void initState() {
     super.initState();
-    final profile = ref.read(profileControllerProvider).profile;
+    final state = ref.read(profileControllerProvider);
 
-    // Attempting to split FullName for FirstName/LastName if not natively provided that way by the GET endpoint
-    final nameParts = profile?.fullName.split(' ') ?? [];
-    final firstName = nameParts.isNotEmpty ? nameParts.first : '';
-    final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
-
-    _firstNameController = TextEditingController(text: firstName);
-    _lastNameController = TextEditingController(text: lastName);
-    _userNameController = TextEditingController(text: profile?.userName ?? '');
-    _phoneController = TextEditingController(text: profile?.phoneNumber ?? '');
+    _firstNameController = TextEditingController(text: state.firstName);
+    _lastNameController = TextEditingController(text: state.lastName);
+    _userNameController = TextEditingController(text: state.userName);
+    _phoneController = TextEditingController(text: state.phoneNumber);
     _bioController = TextEditingController();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(profileControllerProvider.notifier).clearSelectedImage();
+    });
   }
 
   @override
@@ -58,55 +53,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() => _selectedImage = File(pickedFile.path));
-      // Trigger upload right away so it behaves snappily, or wait for save?
-      // Requirment says "Submit changes to backend". The API has a separated image upload endpoint.
-      // We will do it together on save.
-    }
-  }
-
-  Future<void> _onSave() async {
+  Future<void> _handleSave() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final controller = ref.read(profileControllerProvider.notifier);
-    final profile = ref.read(profileControllerProvider).profile;
     final l10n = context.l10n;
 
-    if (profile == null) return;
-
-    // Upload Image if changed
-    if (_selectedImage != null) {
-      final successImage = await controller.updateProfileImage(_selectedImage!);
-      if (!successImage && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to upload image'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-    }
-
-    // Update Profile Information
-    final updateRequest = UpdateUserAccount(
-      id: profile.id,
-      firstName: _firstNameController.text.trim(),
-      lastName: _lastNameController.text.trim(),
-      userName: _userNameController.text.trim(),
-      phoneNumber: _phoneController.text.trim().isEmpty
-          ? null
-          : _phoneController.text.trim(),
+    final success = await controller.saveProfile(
+      firstName: _firstNameController.text,
+      lastName: _lastNameController.text,
+      userName: _userNameController.text,
+      phoneNumber: _phoneController.text,
+      bio: _bioController.text,
     );
 
-    final successProfile = await controller.updateProfile(updateRequest);
-
-    if (successProfile && mounted) {
+    if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.translate('profileUpdateSuccess')),
@@ -120,10 +81,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(profileControllerProvider);
+    final controller = ref.read(profileControllerProvider.notifier);
     final colors = context.dalleniColors;
     final l10n = context.l10n;
-
-    final profileImageUrl = state.profile?.profileImageUrl;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -156,126 +116,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ],
 
                 // Profile Image Selection
-                Center(
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundColor: colors.surfaceContainerHighest,
-                        backgroundImage: _selectedImage != null
-                            ? FileImage(_selectedImage!) as ImageProvider
-                            : (profileImageUrl != null &&
-                                      profileImageUrl.isNotEmpty
-                                  ? NetworkImage(profileImageUrl)
-                                  : null),
-                        child:
-                            _selectedImage == null &&
-                                (profileImageUrl == null ||
-                                    profileImageUrl.isEmpty)
-                            ? Icon(
-                                Icons.person,
-                                size: 60,
-                                color: colors.onSurfaceVariant,
-                              )
-                            : null,
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: _pickImage,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: colors.background,
-                                width: 2,
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.camera_alt,
-                              color: colors.onPrimary,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                ProfileAvatarPicker(
+                  state: state,
+                  onPickImage: controller.pickProfileImage,
                 ),
                 const SizedBox(height: 32),
 
                 // Form Section
-                AppCard(
-                  child: Column(
-                    children: [
-                      AppTextField(
-                        controller: _firstNameController,
-                        labelText: l10n.translate('firstNameLabel'),
-                        hintText: l10n.translate('firstNameHint'),
-                        textInputAction: TextInputAction.next,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return l10n.translate(
-                              'validationFirstNameRequired',
-                            );
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        controller: _lastNameController,
-                        labelText: l10n.translate('lastNameLabel'),
-                        hintText: l10n.translate('lastNameHint'),
-                        textInputAction: TextInputAction.next,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return l10n.translate('validationLastNameRequired');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      // Username Field
-                      AppTextField(
-                        controller: _userNameController,
-                        labelText: l10n.translate('userNameLabel'),
-                        hintText: l10n.translate('userNameHint'),
-                        textInputAction: TextInputAction.next,
-                        //prefixText: '@',
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return l10n.translate('validationUserNameRequired');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      // Phone Number Field
-                      AppTextField(
-                        controller: _phoneController,
-                        labelText: l10n.translate('phoneNumberLabel'),
-                        hintText: l10n.translate('phoneNumberHint'),
-                        textInputAction: TextInputAction.next,
-                        prefixIcon: Icon(
-                          Icons.phone_outlined,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Bio Field
-                      AppTextField(
-                        controller: _bioController,
-                        labelText: l10n.translate('bioLabel'),
-                        hintText: l10n.translate('bioHint'),
-                        textInputAction: TextInputAction.done,
-                        //maxLines: 3,
-                      ),
-                    ],
-                  ),
+                ProfileFormFields(
+                  firstNameController: _firstNameController,
+                  lastNameController: _lastNameController,
+                  userNameController: _userNameController,
+                  phoneController: _phoneController,
+                  bioController: _bioController,
+                  controller: controller,
                 ),
 
                 const SizedBox(height: 32),
@@ -284,43 +138,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 AppButton(
                   label: l10n.translate('saveChangesButton'),
                   isLoading: state.isLoading,
-                  onPressed: state.isLoading ? null : _onSave,
+                  onPressed: state.isLoading ? null : _handleSave,
                 ),
 
                 const SizedBox(height: 16),
 
                 // Info Card
-                AppCard(
-                  //  color: colors.primaryContainer.withOpacity(0.3),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.info_outline, color: colors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.translate('updateProfileInfoTitle'),
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: colors.onSurface,
-                                  ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              l10n.translate('updateProfileInfoDesc'),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: colors.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const ProfileInfoCard(),
               ],
             ),
           ),
@@ -329,3 +153,4 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 }
+

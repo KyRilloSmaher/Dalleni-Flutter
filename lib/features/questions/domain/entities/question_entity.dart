@@ -106,7 +106,8 @@ class Question {
       upVotes: upVotes ?? this.upVotes,
       downVotes: downVotes ?? this.downVotes,
       upVotedByCurrentUser: upVotedByCurrentUser ?? this.upVotedByCurrentUser,
-      downVotedByCurrentUser: downVotedByCurrentUser ?? this.downVotedByCurrentUser,
+      downVotedByCurrentUser:
+          downVotedByCurrentUser ?? this.downVotedByCurrentUser,
       views: views ?? this.views,
       answersCount: answersCount ?? this.answersCount,
       isClosed: isClosed ?? this.isClosed,
@@ -153,6 +154,8 @@ class Answer {
     required this.createdAt,
     this.authorProfileImageUrl,
     this.authorReputation,
+    required this.upVotedByCurrentUser,
+    required this.downVotedByCurrentUser,
   });
 
   final String id;
@@ -165,6 +168,8 @@ class Answer {
   final int upVotes;
   final int downVotes;
   final bool isAccepted;
+  final bool? upVotedByCurrentUser;
+  final bool? downVotedByCurrentUser;
   final DateTime createdAt;
 
   int get upvotes => upVotes;
@@ -182,6 +187,8 @@ class Answer {
     int? upVotes,
     int? downVotes,
     bool? isAccepted,
+    bool? upVotedByCurrentUser,
+    bool? downVotedByCurrentUser,
     DateTime? createdAt,
   }) {
     return Answer(
@@ -197,6 +204,8 @@ class Answer {
       downVotes: downVotes ?? this.downVotes,
       isAccepted: isAccepted ?? this.isAccepted,
       createdAt: createdAt ?? this.createdAt,
+      upVotedByCurrentUser: upVotedByCurrentUser ?? this.upVotedByCurrentUser,
+      downVotedByCurrentUser: downVotedByCurrentUser ?? this.downVotedByCurrentUser,
     );
   }
 }

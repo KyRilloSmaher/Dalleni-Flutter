@@ -1,9 +1,10 @@
+import 'package:dalleni/features/official_entities/data/models/service_model.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/models/api_response.dart';
 import '../../../../core/models/paged_list.dart';
 import '../../../../core/network/api_exception.dart';
-import '../../../services/data/models/service_model.dart';
+
 import '../models/official_entity_model.dart';
 
 abstract class OfficialEntitiesRemoteDataSource {
