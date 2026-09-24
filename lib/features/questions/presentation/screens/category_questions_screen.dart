@@ -59,6 +59,7 @@ class CategoryQuestionsScreen extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final question = state.questions[index];
                   return QuestionCard(
+                     isdetailsscreen: false,
                     question: question,
                     isSaved: ref.watch(
                       savedQuestionsControllerProvider.select(

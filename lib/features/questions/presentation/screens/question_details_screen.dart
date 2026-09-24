@@ -111,6 +111,7 @@ class _QuestionDetailsScreenState extends ConsumerState<QuestionDetailsScreen> {
             child: Hero(
               tag: 'question_${widget.question.id}',
               child: QuestionCard(
+                isdetailsscreen: true,
                 question: _question,
                 isDetailsView: true,
                 onUpvote: () => _handleVote(0),

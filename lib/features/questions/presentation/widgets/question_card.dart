@@ -16,6 +16,7 @@ class QuestionCard extends StatelessWidget {
     this.onSaveToggle,
     this.onCategoryTap,
     this.onTagTap,
+    required this.isdetailsscreen,
   });
 
   final Question question;
@@ -25,7 +26,7 @@ class QuestionCard extends StatelessWidget {
   final VoidCallback? onUpvote;
   final VoidCallback? onDownvote;
   final VoidCallback? onSaveToggle;
-
+  final bool isdetailsscreen;
   final VoidCallback? onCategoryTap;
 
   final void Function(QuestionTag tag)? onTagTap;
@@ -41,264 +42,275 @@ class QuestionCard extends StatelessWidget {
       question.createdAt.toLocal(),
     );
 
-    return Container(
-      width: double.infinity,
-      color: colors.surface,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // =========================
-          // POST HEADER
-          // =========================
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 12, 12),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 21,
-                  backgroundColor: colors.surfaceContainerHighest,
-                  backgroundImage: question.authorProfileImageUrl != null
-                      ? NetworkImage(question.authorProfileImageUrl!)
-                      : null,
-                  child: question.authorProfileImageUrl == null
-                      ? Icon(
-                          Icons.person_outline_rounded,
-                          color: colors.primary,
-                        )
-                      : null,
-                ),
+    return GestureDetector(
+      onTap: () {
+        if (!isdetailsscreen) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => QuestionDetailsScreen(question: question),
+            ),
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        color: colors.surface,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // =========================
+            // POST HEADER
+            // =========================
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 12, 12),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 21,
+                    backgroundColor: colors.surfaceContainerHighest,
+                    backgroundImage: question.authorProfileImageUrl != null
+                        ? NetworkImage(question.authorProfileImageUrl!)
+                        : null,
+                    child: question.authorProfileImageUrl == null
+                        ? Icon(
+                            Icons.person_outline_rounded,
+                            color: colors.primary,
+                          )
+                        : null,
+                  ),
 
-                const SizedBox(width: 10),
+                  const SizedBox(width: 10),
 
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        question.authorName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.titleMedium?.copyWith(
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.w700,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          question.authorName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.titleMedium?.copyWith(
+                            color: colors.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Text(
-                            createdAtLabel,
-                            style: textTheme.bodySmall?.copyWith(
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(
+                              createdAtLabel,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Icon(
+                              Icons.public,
+                              size: 13,
                               color: colors.onSurfaceVariant,
                             ),
-                          ),
-                          const SizedBox(width: 5),
-                          Icon(
-                            Icons.public,
-                            size: 13,
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.more_horiz_rounded,
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // =========================
-          // QUESTION CONTENT
-          // =========================
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: InkWell(
-              onTap: isDetailsView
-                  ? null
-                  : () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              QuestionDetailsScreen(question: question),
+                          ],
                         ),
-                      );
-                    },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    question.title,
-                    style: textTheme.titleLarge?.copyWith(
-                      color: colors.onSurface,
-                      fontWeight: FontWeight.w800,
-                      height: 1.25,
+                      ],
                     ),
                   ),
 
-                  if (question.content != null &&
-                      question.content!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      question.content!,
-                      maxLines: isDetailsView ? null : 5,
-                      overflow: isDetailsView ? null : TextOverflow.ellipsis,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurface,
-                        height: 1.55,
-                      ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(
+                      Icons.more_horiz_rounded,
+                      color: colors.onSurfaceVariant,
                     ),
-                  ],
-
-                  // =========================
-                  // CATEGORY
-                  // =========================
-                  if (question.categoryId != null &&
-                      question.categoryName != null) ...[
-                    const SizedBox(height: 14),
-                    ActionChip(
-                      backgroundColor: colors.surfaceContainerHigh,
-                      side: BorderSide.none,
-                      label: Text(question.categoryName!),
-                      labelStyle: textTheme.labelMedium?.copyWith(
-                        color: colors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      onPressed: onCategoryTap,
-                    ),
-                  ],
-
-                  // =========================
-                  // TAGS
-                  // =========================
-                  if (question.tags.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: question.tags
-                          .map(
-                            (tag) => ActionChip(
-                              backgroundColor: colors.surfaceContainerHigh,
-                              side: BorderSide.none,
-                              label: Text('#${tag.name}'),
-                              labelStyle: textTheme.labelSmall?.copyWith(
-                                color: colors.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              onPressed: onTagTap == null
-                                  ? null
-                                  : () => onTagTap!(tag),
-                            ),
-                          )
-                          .toList(growable: false),
-                    ),
-                  ],
+                  ),
                 ],
               ),
             ),
-          ),
 
-          const SizedBox(height: 16),
-
-          // =========================
-          // STATS
-          // =========================
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                if (question.upVotes > 0)
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 9,
-                        backgroundColor: colors.primary,
-                        child: const Icon(
-                          Icons.thumb_up,
-                          size: 11,
-                          color: Colors.white,
-                        ),
+            // =========================
+            // QUESTION CONTENT
+            // =========================
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: InkWell(
+                onTap: isDetailsView
+                    ? null
+                    : () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                QuestionDetailsScreen(question: question),
+                          ),
+                        );
+                      },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      question.title,
+                      style: textTheme.titleLarge?.copyWith(
+                        color: colors.onSurface,
+                        fontWeight: FontWeight.w800,
+                        height: 1.25,
                       ),
-                      const SizedBox(width: 5),
+                    ),
+
+                    if (question.content != null &&
+                        question.content!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 10),
                       Text(
-                        '${question.upVotes}',
-                        style: TextStyle(
-                          color: colors.onSurfaceVariant,
-                          fontSize: 13,
+                        question.content!,
+                        maxLines: isDetailsView ? null : 5,
+                        overflow: isDetailsView ? null : TextOverflow.ellipsis,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurface,
+                          height: 1.55,
                         ),
                       ),
                     ],
-                  ),
 
-                const Spacer(),
+                    // =========================
+                    // CATEGORY
+                    // =========================
+                    if (question.categoryId != null &&
+                        question.categoryName != null) ...[
+                      const SizedBox(height: 14),
+                      ActionChip(
+                        backgroundColor: colors.surfaceContainerHigh,
+                        side: BorderSide.none,
+                        label: Text(question.categoryName!),
+                        labelStyle: textTheme.labelMedium?.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        onPressed: onCategoryTap,
+                      ),
+                    ],
 
-                Text(
-                  '${question.answersCount} answers',
-                  style: TextStyle(
-                    color: colors.onSurfaceVariant,
-                    fontSize: 13,
-                  ),
+                    // =========================
+                    // TAGS
+                    // =========================
+                    if (question.tags.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: question.tags
+                            .map(
+                              (tag) => ActionChip(
+                                backgroundColor: colors.surfaceContainerHigh,
+                                side: BorderSide.none,
+                                label: Text('#${tag.name}'),
+                                labelStyle: textTheme.labelSmall?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                onPressed: onTagTap == null
+                                    ? null
+                                    : () => onTagTap!(tag),
+                              ),
+                            )
+                            .toList(growable: false),
+                      ),
+                    ],
+                  ],
                 ),
-
-                const SizedBox(width: 12),
-
-                Text(
-                  '${question.views} views',
-                  style: TextStyle(
-                    color: colors.onSurfaceVariant,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
-          Divider(height: 1, color: colors.outlineVariant),
+            // =========================
+            // STATS
+            // =========================
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  if (question.upVotes > 0)
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 9,
+                          backgroundColor: colors.primary,
+                          child: const Icon(
+                            Icons.thumb_up,
+                            size: 11,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${question.upVotes}',
+                          style: TextStyle(
+                            color: colors.onSurfaceVariant,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            child: Row(
-              children: <Widget>[
-                // Upvote
-                Expanded(
-                  child: FbActionButton(
-                    icon: Icons.thumb_up_alt_outlined,
-                    activeIcon: Icons.thumb_up_alt_rounded,
-                    label: 'Upvote',
-                    isActive: isUpvoted,
-                    activeColor: colors.primary,
-                    onPressed: onUpvote,
+                  const Spacer(),
+
+                  Text(
+                    '${question.answersCount} answers',
+                    style: TextStyle(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
                   ),
-                ),
 
-                // Downvote
-                Expanded(
-                  child: FbActionButton(
-                    icon: Icons.thumb_down_alt_outlined,
-                    activeIcon: Icons.thumb_down_alt_rounded,
-                    label: 'Downvote',
-                    isActive: isDownvoted,
-                    activeColor: colors.error,
-                    onPressed: onDownvote,
+                  const SizedBox(width: 12),
+
+                  Text(
+                    '${question.views} views',
+                    style: TextStyle(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          // Facebook-like separator between posts.
-          Container(height: 8, color: colors.surfaceContainerLowest),
-        ],
+            const SizedBox(height: 10),
+
+            Divider(height: 1, color: colors.outlineVariant),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Row(
+                children: <Widget>[
+                  // Upvote
+                  Expanded(
+                    child: FbActionButton(
+                      icon: Icons.thumb_up_alt_outlined,
+                      activeIcon: Icons.thumb_up_alt_rounded,
+                      label: 'Upvote',
+                      isActive: isUpvoted,
+                      activeColor: colors.primary,
+                      onPressed: onUpvote,
+                    ),
+                  ),
+
+                  // Downvote
+                  Expanded(
+                    child: FbActionButton(
+                      icon: Icons.thumb_down_alt_outlined,
+                      activeIcon: Icons.thumb_down_alt_rounded,
+                      label: 'Downvote',
+                      isActive: isDownvoted,
+                      activeColor: colors.error,
+                      onPressed: onDownvote,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Facebook-like separator between posts.
+            Container(height: 8, color: colors.surfaceContainerLowest),
+          ],
+        ),
       ),
     );
   }

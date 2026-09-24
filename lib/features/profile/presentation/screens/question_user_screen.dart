@@ -1,6 +1,7 @@
 import 'package:dalleni/features/profile/presentation/providers/profile_controller.dart';
 import 'package:dalleni/features/profile/presentation/widgets/activity_card.dart';
 import 'package:dalleni/features/questions/presentation/providers/home_feed_controller.dart';
+import 'package:dalleni/features/questions/presentation/screens/question_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -62,7 +63,16 @@ class _SavedQuestionsScreenState extends ConsumerState<QuestionsUserScreen> {
         itemBuilder: (context, index) {
           final questionuser = state.questionuser[index];
           print('User Question ${questionuser.question.content} in UI');
-          return ActivityCard(questionUser: questionuser);
+          return ActivityCard(
+            questionUser: questionuser,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => QuestionDetailsScreen(question: state.questionuser[index].question),
+                ),
+              );
+            },
+          );
         },
       ),
     );
