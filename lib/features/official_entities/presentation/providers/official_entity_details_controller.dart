@@ -1,6 +1,6 @@
+import 'package:dalleni/features/official_entities/domain/entities/service_entity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../services/domain/entities/service_entity.dart';
 import '../../data/repositories/official_entities_repository_impl.dart';
 import '../../domain/entities/official_entity.dart';
 

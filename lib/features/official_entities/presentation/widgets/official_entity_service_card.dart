@@ -1,8 +1,9 @@
+import 'package:dalleni/features/official_entities/domain/entities/service_entity.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/dalleni_theme.dart';
-import '../../../services/domain/entities/service_entity.dart';
+
 import 'official_entity_service_status.dart';
 
 class OfficialEntityServiceCard extends StatelessWidget {

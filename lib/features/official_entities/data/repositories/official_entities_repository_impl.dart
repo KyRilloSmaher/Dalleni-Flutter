@@ -1,8 +1,9 @@
+import 'package:dalleni/features/official_entities/domain/entities/service_entity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/paged_list.dart';
 import '../../../../core/network/dio_client.dart';
-import '../../../services/domain/entities/service_entity.dart';
+
 import '../../domain/entities/official_entity.dart';
 import '../../domain/repositories/official_entities_repository.dart';
 import '../datasources/official_entities_remote_data_source.dart';

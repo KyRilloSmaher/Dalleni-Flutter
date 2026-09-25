@@ -1,5 +1,5 @@
+import 'package:dalleni/features/official_entities/domain/entities/service_entity.dart';
 import '../../../../core/models/paged_list.dart';
-import '../../../services/domain/entities/service_entity.dart';
 import '../entities/official_entity.dart';
 
 abstract class OfficialEntitiesRepository {

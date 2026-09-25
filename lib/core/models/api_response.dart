@@ -31,7 +31,9 @@ class ApiResponse<T> {
               .toList(growable: false),
         ),
       ),
-      data: fromJsonT != null ? fromJsonT(json['data']) : json['data'] as T?,
+      data: fromJsonT != null && json['data'] != null
+          ? fromJsonT(json['data'])
+          : json['data'] as T?,
     );
   }
 }

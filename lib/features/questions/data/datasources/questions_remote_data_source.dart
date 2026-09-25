@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dalleni/core/error/failure.dart';
 import 'package:dio/dio.dart';
 
@@ -124,31 +125,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
           'pageSize': pageSize,
         },
       );
-
-      final apiResponse = ApiResponse<PagedList<QuestionModel>>.fromJson(
-        response.data ?? <String, dynamic>{},
-        fromJsonT: (json) => PagedList<QuestionModel>.fromJson(
-          json as Map<String, dynamic>,
-          (json) => QuestionModel.fromJson(json as Map<String, dynamic>),
-        ),
-      );
-
-      if (!apiResponse.succeeded) {
-        throw ApiException(
-          message: apiResponse.message,
-          statusCode: apiResponse.statusCode,
-        );
-      }
-
-      return apiResponse.data ??
-          const PagedList<QuestionModel>(
-            items: [],
-            pageNumber: 1,
-            totalPages: 0,
-            totalCount: 0,
-            hasPreviousPage: false,
-            hasNextPage: false,
-          );
+      return _parsePagedQuestionsResponse(response.data);
     } on DioException catch (error) {
       throw mapDioException(error);
     }
@@ -213,7 +190,9 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.succeeded;
     } on DioException catch (error) {
-      throw mapDioException(error);
+      throw ServerFailure(
+        mapDioException(error).errors?.values.first.toString() ?? "",
+      );
     }
   }
 
@@ -230,7 +209,9 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.succeeded;
     } on DioException catch (error) {
-      throw mapDioException(error);
+      throw ServerFailure(
+        mapDioException(error).errors?.values.first.toString() ?? "",
+      );
     }
   }
 
@@ -249,8 +230,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
       if (apiResponse.succeeded && apiResponse.data != null) {
         for (final item in apiResponse.data!) {
           if (item is Map<String, dynamic>) {
-            final voteId =
-                item['voteId']?.toString() ?? item['id']?.toString();
+            final voteId = item['voteId']?.toString() ?? item['id']?.toString();
             final questionObj = item['question'];
             final questionId = (questionObj is Map)
                 ? questionObj['id']?.toString()
@@ -267,7 +247,9 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
       }
       return result;
     } on DioException catch (error) {
-      throw mapDioException(error);
+      throw ServerFailure(
+        mapDioException(error).errors?.values.first.toString() ?? "",
+      );
     }
   }
 
@@ -292,7 +274,9 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw mapDioException(error);
+      throw ServerFailure(
+        mapDioException(error).errors?.values.first.toString() ?? "",
+      );
     }
   }
 
@@ -326,7 +310,9 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.data!.items;
     } on DioException catch (error) {
-      throw mapDioException(error);
+    throw ServerFailure(
+        mapDioException(error).errors?.values.first.toString() ?? "",
+      );
     }
   }
 
@@ -351,7 +337,9 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.data;
     } on DioException catch (error) {
-      throw mapDioException(error);
+      throw ServerFailure(
+        mapDioException(error).errors?.values.first.toString() ?? "",
+      );
     }
   }
 
@@ -375,7 +363,9 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return true;
     } on DioException catch (error) {
-      throw mapDioException(error);
+      throw ServerFailure(
+        mapDioException(error).errors?.values.first.toString() ?? "",
+      );
     }
   }
 
@@ -402,19 +392,33 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw mapDioException(error);
+    throw ServerFailure(
+        mapDioException(error).errors?.values.first.toString() ?? "",
+      );
     }
   }
 
   PagedList<QuestionModel> _parsePagedQuestionsResponse(
     Map<String, dynamic>? responseData,
   ) {
+    if (responseData != null &&
+        responseData.containsKey('data') &&
+        responseData['data'] is Map) {
+      final dataMap = responseData['data'] as Map<String, dynamic>;
+      final items = dataMap['items'] as List<dynamic>?;
+      debugPrint('response data.items count: ${items?.length ?? 0}');
+    }
+
     final apiResponse = ApiResponse<PagedList<QuestionModel>>.fromJson(
       responseData ?? <String, dynamic>{},
-      fromJsonT: (json) => PagedList<QuestionModel>.fromJson(
-        json as Map<String, dynamic>,
-        (item) => QuestionModel.fromJson(item as Map<String, dynamic>),
-      ),
+      fromJsonT: (json) {
+        final pagedList = PagedList<QuestionModel>.fromJson(
+          json as Map<String, dynamic>,
+          (item) => QuestionModel.fromJson(item as Map<String, dynamic>),
+        );
+        debugPrint('parsed PagedList.items count: ${pagedList.items.length}');
+        return pagedList;
+      },
     );
 
     if (!apiResponse.succeeded || apiResponse.data == null) {
@@ -436,5 +440,4 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
     }
     return null;
   }
-
 }

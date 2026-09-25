@@ -53,8 +53,8 @@ class QuestionModel extends Question {
           .whereType<Map<String, dynamic>>()
           .map(AnswerModel.fromJson)
           .toList(growable: false),
-      upVotedByCurrentUser: json['upVotedByCurrentUser'] as bool ?? false,
-      downVotedByCurrentUser: json['downVotedByCurrentUser'] as bool ?? false,
+      upVotedByCurrentUser: json['upVotedByCurrentUser'] as bool? ?? false,
+      downVotedByCurrentUser: json['downVotedByCurrentUser'] as bool? ?? false,
     );
   }
 
@@ -81,6 +81,8 @@ class AnswerModel extends Answer {
     required super.createdAt,
     super.authorProfileImageUrl,
     super.authorReputation,
+    required super.upVotedByCurrentUser,
+    required super.downVotedByCurrentUser,
   });
 
   factory AnswerModel.fromJson(Map<String, dynamic> json) {
@@ -98,6 +100,9 @@ class AnswerModel extends Answer {
       createdAt:
           DateTime.tryParse(json['createdAt'] as String? ?? '')?.toUtc() ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      upVotedByCurrentUser: json['upVotedByCurrentUser'] as bool?,
+
+      downVotedByCurrentUser: json['downVotedByCurrentUser'] as bool?,
     );
   }
 
