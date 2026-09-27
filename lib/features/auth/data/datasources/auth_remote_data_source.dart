@@ -1,3 +1,4 @@
+import 'package:dalleni/core/error/failure.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/models/api_response.dart';
@@ -53,8 +54,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       return apiResponse.data!;
-    } on DioException catch (error) {
-      throw _mapDioException(error);
+    } on DioException catch (e) {
+      throw ServerFailure(mapDioException(e).message);
+    } on ApiException catch (e) {
+      throw ServerFailure(e.message);
     }
   }
 
@@ -83,7 +86,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -108,7 +111,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -135,7 +138,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -145,7 +148,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final response = await _dio.get<dynamic>('/auth/google-login');
       return response.data;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -171,7 +174,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -195,7 +198,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -219,7 +222,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -243,7 +246,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
       return apiResponse.data!;
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
   }
 
@@ -252,32 +255,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       await _dio.post('/auth/logout');
     } on DioException catch (error) {
-      throw _mapDioException(error);
+      throw mapDioException(error);
     }
-  }
-
-  ApiException _mapDioException(DioException error) {
-    final responseData = error.response?.data;
-    if (responseData is Map<String, dynamic>) {
-      final apiResponse = ApiResponse<dynamic>.fromJson(responseData);
-      return ApiException(
-        message: apiResponse.message.isEmpty
-            ? error.message ?? 'Request failed.'
-            : apiResponse.message,
-        statusCode: apiResponse.statusCode,
-        errors: apiResponse.errorsBag,
-      );
-    }
-
-    if (error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.receiveTimeout ||
-        error.type == DioExceptionType.sendTimeout) {
-      return const ApiException(message: 'TIMEOUT');
-    }
-
-    return ApiException(
-      message: error.message ?? 'Request failed.',
-      //statusCode: error.response?.statusCode,
-    );
   }
 }

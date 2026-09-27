@@ -1,3 +1,4 @@
+import 'package:dalleni/features/notifications/presentation/providers/notification_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../network/dio_client.dart';
@@ -54,6 +55,16 @@ class AppEntryController extends Notifier<AppStartState> {
   Future<void> logout() async {
     print('[AUTH DEBUG] AppEntryController.logout() requested by user UI');
     await ref.read(authRepositoryProvider).logout();
+    try {
+      await ref.read(notificationControllerProvider.notifier).deactivateDeviceOnLogout();
+
+      print('[FCM DEBUG] FCM initialized successfully after login');
+    } catch (error, stackTrace) {
+      print('[FCM DEBUG] FCM initialization failed after login: $error');
+      print('[FCM DEBUG] FCM stack trace: $stackTrace');
+
+      // FCM failure must NOT make login fail.
+    }
     state = AppStartState.auth;
   }
 }

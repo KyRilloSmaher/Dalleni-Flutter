@@ -54,7 +54,7 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
         'ProfileImage': await MultipartFile.fromFile(profileImage.path),
       });
 
-      final response = await _dio.post(
+      final response = await _dio.put(
         '/users/update-profile-image',
         data: formData,
       );

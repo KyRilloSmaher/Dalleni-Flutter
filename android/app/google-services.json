@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "440429575666",
+    "project_id": "dalleni-a72c0",
+    "storage_bucket": "dalleni-a72c0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:440429575666:android:5838d971c6c141a345ff6b",
+        "android_client_info": {
+          "package_name": "com.example.dalleni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAueBnnH5yMUPqfhlkoOLZ934FcO-nKX_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

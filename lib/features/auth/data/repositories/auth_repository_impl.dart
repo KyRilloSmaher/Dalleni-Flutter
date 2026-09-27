@@ -1,3 +1,5 @@
+import 'package:dalleni/core/helper/formart_utc.dart';
+
 import '../../../../core/network/jwt_utils.dart';
 import '../../../../core/services/token_scheduler.dart';
 import '../../../../core/storage/local_storage_service.dart';
@@ -25,6 +27,8 @@ class AuthRepositoryImpl implements AuthRepository {
   final LocalStorageService _localStorageService;
   final TokenScheduler _tokenScheduler;
 
+  // ─── Login ────────────────────────────────────────────────────────────────
+
   @override
   Future<AuthSession> login({
     required String email,
@@ -33,29 +37,61 @@ class AuthRepositoryImpl implements AuthRepository {
     final session = await _remoteDataSource.login(
       LoginRequestModel(userNameOrEmail: email, password: password),
     );
+
     await _persistSession(session);
+
     return session;
   }
+
+  // ─── Verify OTP ───────────────────────────────────────────────────────────
 
   @override
   Future<bool> verifyOtp({required String email, required String code}) async {
     final session = await _remoteDataSource.verifyOtp(
       VerfiyOTPRequestModel(email: email, code: code),
     );
+
     return session;
   }
 
+  // ─── Refresh Token ────────────────────────────────────────────────────────
+
   @override
-  Future<AuthSession> refreshToken({
+  Future<AuthSession> RefreshToken({
     required String accessToken,
     required String refreshToken,
   }) async {
+    print('[AUTH DEBUG] ===== REFRESH TOKEN =====');
+    print(
+      '[AUTH DEBUG] Refresh started at: '
+      '${DateTime.now().toUtc()}',
+    );
+
+    print(
+      '[AUTH DEBUG] Access token expiry before refresh: '
+      '${JwtUtils.extractExpiry(accessToken)}',
+    );
+    // NOTE: refreshToken is opaque (not a JWT). Never call
+    // JwtUtils.extractExpiry(refreshToken) — it will throw and abort this
+    // method before the actual refresh API call ever runs.
+
     final session = await _remoteDataSource.refreshToken(
       RefreshTokenRequestModel(token: accessToken, refreshToken: refreshToken),
     );
+    print('[AUTH DEBUG] Refresh API returned successfully');
+
+    print(
+      '[AUTH DEBUG] New access expiry: '
+      '${JwtUtils.extractExpiry(session.accessToken)}',
+    );
+    // NOTE: same reasoning — do not decode session.refreshToken as a JWT.
+
     await _persistSession(session);
+
     return session;
   }
+
+  // ─── Sign Up ──────────────────────────────────────────────────────────────
 
   @override
   Future<bool> signUp({
@@ -80,57 +116,102 @@ class AuthRepositoryImpl implements AuthRepository {
     );
   }
 
+  // ─── Restore Session ──────────────────────────────────────────────────────
   @override
   Future<void> restoreSession() async {
     print(
-      '[AUTH DEBUG] AuthRepositoryImpl.restoreSession() (instance: ${identityHashCode(_localStorageService)})',
+      '[AUTH DEBUG] AuthRepositoryImpl.restoreSession() '
+      '(instance: ${identityHashCode(_localStorageService)})',
     );
+
     final accessToken = _localStorageService.getToken();
-    if (accessToken == null || accessToken.isEmpty) {
+    final refreshToken = _localStorageService.getRefreshToken();
+    final accessExpiresAt = _localStorageService.getAccessTokenExpiresAt();
+    final refreshExpiresAt = _localStorageService.getrefreashTokenExpiresAt();
+
+    print('[AUTH DEBUG] ===== RESTORE SESSION =====');
+    print(
+      '[AUTH DEBUG] accessToken exists: ${accessToken != null && accessToken.isNotEmpty}',
+    );
+    print(
+      '[AUTH DEBUG] refreshToken exists: ${refreshToken != null && refreshToken.isNotEmpty}',
+    );
+    print('[AUTH DEBUG] accessTokenExpiresAt: $accessExpiresAt');
+    print('[AUTH DEBUG] refreshTokenExpiresAt: $refreshExpiresAt');
+
+    if (accessToken == null ||
+        accessToken.isEmpty ||
+        refreshToken == null ||
+        refreshToken.isEmpty) {
+      print(
+        '[AUTH DEBUG] Restore session skipped. Access token or refresh token is missing.',
+      );
       return;
     }
 
-    _tokenScheduler.schedule(
-      accessToken: accessToken,
-      onRefreshDue: () async {
-        final storedAccessToken = _localStorageService.getToken();
-        final storedRefreshToken = _localStorageService.getRefreshToken();
+    final now = DateTime.now().toUtc();
 
-        if (storedAccessToken == null || storedRefreshToken == null) {
-          print('[AUTH DEBUG] Proactive refresh due on restoreSession but tokens missing. Calling logout().');
-          await logout();
-          return;
-        }
+    // Logout only when we KNOW the refresh token expired.
+    // A missing/null refreshTokenExpiresAt must NEVER trigger a logout.
+    if (refreshExpiresAt != null && !refreshExpiresAt.isAfter(now)) {
+      print('[AUTH DEBUG] Refresh token has actually expired. Logging out.');
+      await logout();
+      return;
+    }
 
-        try {
-          print('[AUTH DEBUG] Proactive refresh due on restoreSession. Executing refreshToken().');
-          await refreshToken(
-            accessToken: storedAccessToken,
-            refreshToken: storedRefreshToken,
-          );
-        } catch (e) {
-          print('[AUTH DEBUG] Proactive refresh failed on restoreSession: $e. Calling logout().');
-          await logout();
-        }
-      },
-    );
+    if (accessExpiresAt == null) {
+      print(
+        '[AUTH DEBUG] Access token expiry is missing. Cannot schedule proactive refresh.',
+      );
+      return;
+    }
+
+    print('[AUTH DEBUG] Restore access token expires at: $accessExpiresAt');
+    print('[AUTH DEBUG] Restore current UTC: $now');
+
+    // Access token already expired.
+    if (!accessExpiresAt.isAfter(now)) {
+      print(
+        '[AUTH DEBUG] Access token already expired. Refreshing immediately.',
+      );
+      try {
+        await RefreshToken(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        );
+      } catch (e) {
+        print('[AUTH DEBUG] Restore refresh failed: $e. Calling logout().');
+        await logout();
+      }
+      return;
+    }
+
+    // Access token is still valid.
+    _scheduleTokenRefresh(accessExpiresAt);
   }
+
+  // ─── Logout ───────────────────────────────────────────────────────────────
 
   @override
   Future<void> logout() async {
     print(
-      '[AUTH DEBUG] AuthRepositoryImpl.logout() called (instance: ${identityHashCode(_localStorageService)})',
+      '[AUTH DEBUG] AuthRepositoryImpl.logout() called '
+      '(instance: ${identityHashCode(_localStorageService)})',
     );
+
     try {
       await _remoteDataSource.logout();
     } catch (_) {
-      // Ignore errors on logout to ensure local cleanup always happens
+      // Ignore logout API errors.
+      // Local cleanup must always happen.
     }
+
     _tokenScheduler.cancel();
+
     await _localStorageService.clearSession();
   }
 
-  // ─── Forgot-password flow ──────────────────────────────────────────────────
+  // ─── Forgot Password ─────────────────────────────────────────────────────
 
   @override
   Future<bool> sendResetCode({required String email}) =>
@@ -156,14 +237,34 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<bool> resendResetCode({required String email}) => _remoteDataSource
       .resendResetCode(ForgotPasswordRequestModel(email: email));
 
+  // ─── Persist Session ─────────────────────────────────────────────────────
   Future<void> _persistSession(AuthSession session) async {
+    print('[AUTH DEBUG] ===== PERSIST SESSION =====');
+
+    final accessExpiry = session.accessTokenExpiresAt;
+    final refreshExpiry = session.refreshTokenExpiresAt;
+
+    print('[AUTH DEBUG] NEW access token expiry: ${formatUtc(accessExpiry)}');
+    print(
+      '[AUTH DEBUG] NEW refresh token expiry: ${formatUtc(refreshExpiry!)}',
+    );
+    print('[AUTH DEBUG] Current UTC: ${formatUtc(DateTime.now())}');
+
+    final now = DateTime.now();
+    final nowUtc = now.toUtc();
+
+    print('[AUTH DEBUG] Local now: $now');
+    print('[AUTH DEBUG] UTC now: $nowUtc');
+    print('[AUTH DEBUG] UTC ISO: ${nowUtc.toIso8601String()}');
+    print('[AUTH DEBUG] Local ISO: ${now.toIso8601String()}');
+    // Save tokens + expirations exactly once, in one place.
     await _localStorageService.saveToken(session.accessToken);
     await _localStorageService.saveRefreshToken(session.refreshToken);
-    print(
-      '[AUTH DEBUG] AFTER SAVE ACCESS: ${session.accessToken.isNotEmpty} (instance: ${identityHashCode(_localStorageService)})',
+    await _localStorageService.saveAccessTokenExpiresAt(
+      session.accessTokenExpiresAt,
     );
-    print(
-      '[AUTH DEBUG] AFTER SAVE REFRESH: ${session.refreshToken.isNotEmpty} (instance: ${identityHashCode(_localStorageService)})',
+    await _localStorageService.saveRefereshTokenExpiresAt(
+      session.refreshTokenExpiresAt,
     );
 
     final userId = JwtUtils.extractUserId(session.accessToken);
@@ -171,25 +272,58 @@ class AuthRepositoryImpl implements AuthRepository {
       await _localStorageService.saveUserId(userId);
     }
 
+    print(
+      '[AUTH DEBUG] AFTER SAVE ACCESS: ${session.accessToken.isNotEmpty} '
+      '(instance: ${identityHashCode(_localStorageService)})',
+    );
+    print(
+      '[AUTH DEBUG] AFTER SAVE REFRESH: ${session.refreshToken.isNotEmpty} '
+      '(instance: ${identityHashCode(_localStorageService)})',
+    );
+
+    // Schedule using the NEW access token expiry — never a JWT decode.
+    _scheduleTokenRefresh(session.accessTokenExpiresAt);
+  }
+
+  // ─── Token Scheduler ──────────────────────────────────────────────────────
+
+  void _scheduleTokenRefresh(DateTime accessTokenExpiresAt) {
     _tokenScheduler.schedule(
-      accessToken: session.accessToken,
+      accessTokenExpiresAt: accessTokenExpiresAt,
       onRefreshDue: () async {
         final latestAccessToken = _localStorageService.getToken();
+
         final latestRefreshToken = _localStorageService.getRefreshToken();
-        if (latestAccessToken == null || latestRefreshToken == null) {
-          print('[AUTH DEBUG] Proactive refresh due but tokens missing. Calling logout().');
+
+        if (latestAccessToken == null ||
+            latestAccessToken.isEmpty ||
+            latestRefreshToken == null ||
+            latestRefreshToken.isEmpty) {
+          print(
+            '[AUTH DEBUG] Proactive refresh due but '
+            'tokens are missing. Calling logout().',
+          );
+
           await logout();
           return;
         }
 
         try {
-          print('[AUTH DEBUG] Proactive refresh due. Executing refreshToken().');
-          await refreshToken(
+          print(
+            '[AUTH DEBUG] Proactive refresh due. '
+            'Executing refreshToken().',
+          );
+
+          await RefreshToken(
             accessToken: latestAccessToken,
             refreshToken: latestRefreshToken,
           );
         } catch (e) {
-          print('[AUTH DEBUG] Proactive refresh failed: $e. Calling logout().');
+          print(
+            '[AUTH DEBUG] Proactive refresh failed: $e. '
+            'Calling logout().',
+          );
+
           await logout();
         }
       },

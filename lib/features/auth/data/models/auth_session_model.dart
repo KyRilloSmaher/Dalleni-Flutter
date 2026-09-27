@@ -4,7 +4,7 @@ class AuthSessionModel extends AuthSession {
   const AuthSessionModel({
     required super.accessToken,
     required super.refreshToken,
-    required super.tokenType,
+
     required super.accessTokenExpiresAt,
     required super.refreshTokenExpiresAt,
   });
@@ -13,7 +13,6 @@ class AuthSessionModel extends AuthSession {
     return AuthSessionModel(
       accessToken: json['accessToken'] as String? ?? '',
       refreshToken: json['refreshToken'] as String? ?? '',
-      tokenType: json['tokenType'] as String? ?? '',
       accessTokenExpiresAt: DateTime.parse(
         json['accessTokenExpiresAt'] as String,
       ).toUtc(),
