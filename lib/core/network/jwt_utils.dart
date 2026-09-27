@@ -12,7 +12,7 @@ class JwtUtils {
     final normalized = base64Url.normalize(segments[1]);
     final payload = utf8.decode(base64Url.decode(normalized));
     return json.decode(payload) as Map<String, dynamic>;
-  }
+  }        
 
   static DateTime? extractExpiry(String token) {
     final payload = decodePayload(token);

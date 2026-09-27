@@ -1,3 +1,4 @@
+import 'package:dalleni/features/notifications/presentation/providers/notification_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -81,6 +82,7 @@ class LoginController extends Notifier<AsyncValue<LoginFormState>> {
   }) async {
     final localizations = AppLocalizations.of(context);
     final currentState = state.valueOrNull ?? LoginFormState.initial();
+
     state = AsyncValue.data(
       currentState.copyWith(
         email: identifier.trim(),
@@ -91,9 +93,12 @@ class LoginController extends Notifier<AsyncValue<LoginFormState>> {
     );
 
     try {
+      // 1. Login
       final session = await ref
           .read(authRepositoryProvider)
           .login(email: identifier.trim(), password: password);
+
+      // 2. Login succeeded → update state immediately
       state = AsyncValue.data(
         (state.valueOrNull ?? currentState).copyWith(
           email: identifier.trim(),
@@ -102,10 +107,14 @@ class LoginController extends Notifier<AsyncValue<LoginFormState>> {
           session: session,
         ),
       );
+
+      
+    
     } on ApiException catch (error) {
       final fallbackMessage = error.message == 'TIMEOUT'
           ? localizations.translate('networkTimeout')
           : _resolveBackendMessage(localizations, error);
+
       state = AsyncValue.data(
         (state.valueOrNull ?? currentState).copyWith(
           email: identifier.trim(),
@@ -114,7 +123,10 @@ class LoginController extends Notifier<AsyncValue<LoginFormState>> {
           errorMessage: fallbackMessage,
         ),
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      print('[AUTH DEBUG] LOGIN ERROR: $error');
+      print('[AUTH DEBUG] LOGIN STACK TRACE: $stackTrace');
+
       state = AsyncValue.data(
         (state.valueOrNull ?? currentState).copyWith(
           email: identifier.trim(),
@@ -132,9 +144,9 @@ class LoginController extends Notifier<AsyncValue<LoginFormState>> {
       currentState.copyWith(isSubmitting: true, clearError: true),
     );
 
-    final launched = await ref.read(externalAuthLauncherProvider).launch(
-      '${AppConstants.baseUrl}/auth/google-login',
-    );
+    final launched = await ref
+        .read(externalAuthLauncherProvider)
+        .launch('${AppConstants.baseUrl}/auth/google-login');
 
     if (launched) {
       state = AsyncValue.data(

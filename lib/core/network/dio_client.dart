@@ -1,15 +1,19 @@
+import 'package:dalleni/core/constants/app_constants.dart';
+import 'package:dalleni/core/network/interceptors/auth_interceptor.dart';
+import 'package:dalleni/core/network/interceptors/logging_interceptor.dart';
+import 'package:dalleni/core/providers/core_providers.dart';
+import 'package:dalleni/core/services/log_service.dart';
 import 'package:dalleni/core/services/token_scheduler.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../features/auth/data/datasources/auth_remote_data_source.dart';
-import '../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../features/auth/data/repositories/auth_repository_impl.dart' hide AuthRemoteDataSource, AuthRemoteDataSourceImpl;
 import '../../features/auth/domain/repositories/auth_repository.dart';
-import '../constants/app_constants.dart';
-import '../providers/core_providers.dart';
-import '../services/log_service.dart';
-import 'interceptors/auth_interceptor.dart';
-import 'interceptors/logging_interceptor.dart';
+import '../../features/notifications/data/datasources/notifications_remote_data_source.dart';
+import '../../features/notifications/data/repositories/notifications_repository_impl.dart';
+import '../../features/notifications/domain/repositories/notifications_repository.dart';
+import '../../features/notifications/services/fcm_service.dart';
+
 
 final tokenSchedulerProvider = Provider<TokenScheduler>((ref) {
   return TokenScheduler();
@@ -66,4 +70,20 @@ final dioClientProvider = Provider<Dio>((ref) {
   ]);
 
   return dio;
+});
+
+final fcmServiceProvider = Provider<FcmService>((ref) {
+  return FcmService();
+});
+
+final notificationsRemoteDataSourceProvider =
+    Provider<NotificationsRemoteDataSource>((ref) {
+  return NotificationsRemoteDataSourceImpl(ref.read(dioClientProvider));
+});
+
+final notificationsRepositoryProvider = Provider<NotificationsRepository>((ref) {
+  return NotificationsRepositoryImpl(
+    remoteDataSource: ref.read(notificationsRemoteDataSourceProvider),
+    localStorageService: ref.read(localStorageServiceProvider),
+  );
 });

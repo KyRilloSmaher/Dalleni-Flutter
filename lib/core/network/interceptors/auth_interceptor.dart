@@ -85,21 +85,25 @@ class AuthInterceptor extends Interceptor {
           '\nLocalStorage Instance: ${identityHashCode(_localStorageService)}';
       await _logService.log(msg);
       print(msg);
-      print('[AUTH DEBUG] Calling _authRepository.logout() due to missing tokens on 401');
+      print(
+        '[AUTH DEBUG] Calling _authRepository.logout() due to missing tokens on 401',
+      );
       await _authRepository.logout();
       handler.next(err);
       return;
     }
 
     try {
-      print('[AUTH DEBUG] Attempting refresh-token operation triggered by path: ${err.requestOptions.path}');
+      print(
+        '[AUTH DEBUG] Attempting refresh-token operation triggered by path: ${err.requestOptions.path}',
+      );
       if (_isRefreshing) {
         if (_refreshFuture != null) {
           await _refreshFuture;
         }
       } else {
         _isRefreshing = true;
-        _refreshFuture = _authRepository.refreshToken(
+        _refreshFuture = _authRepository.RefreshToken(
           accessToken: storedToken,
           refreshToken: refreshToken,
         );
@@ -113,7 +117,9 @@ class AuthInterceptor extends Interceptor {
 
       final latestToken = _localStorageService.getToken();
       if (latestToken == null || latestToken.isEmpty) {
-        print('[AUTH DEBUG] Refresh succeeded but latestToken is null/empty. Calling logout()');
+        print(
+          '[AUTH DEBUG] Refresh succeeded but latestToken is null/empty. Calling logout()',
+        );
         await _authRepository.logout();
         handler.next(err);
         return;
@@ -126,7 +132,9 @@ class AuthInterceptor extends Interceptor {
           '[AUTH DEBUG] Refresh token operation or retry failed for path ${err.requestOptions.path}: $error';
       await _logService.log(msg);
       print(msg);
-      print('[AUTH DEBUG] Calling _authRepository.logout() due to refresh failure');
+      print(
+        '[AUTH DEBUG] Calling _authRepository.logout() due to refresh failure',
+      );
       await _authRepository.logout();
       handler.next(err);
     }

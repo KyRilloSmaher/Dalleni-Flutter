@@ -8,6 +8,6 @@ class RefreshTokenRequestModel {
   final String refreshToken;
 
   Map<String, dynamic> toJson() {
-    return <String, dynamic>{'token': token, 'refreshToken': refreshToken};
+    return <String, dynamic>{'accessToken': token, 'refreshToken': refreshToken};
   }
 }
