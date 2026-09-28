@@ -13,27 +13,32 @@ class AnswerCard extends StatelessWidget {
     required this.answer,
     required this.isUpvoted,
     required this.isDownvoted,
-    required this.isMarked,
+    required this.isMarkedSuccess,
+    required this.isMarkedUnsuccess,
     required this.isQuestionOwner,
     required this.onUpvote,
     required this.onDownvote,
     required this.onDelete,
     required this.onToggleAccept,
-    required this.onToggleMark,
+    required this.onToggleMarkSuccess,
+    required this.onToggleMarkUnsuccess, required this.isAnswerOwner,
   });
 
   final Answer answer;
 
   final bool isUpvoted;
   final bool isDownvoted;
-  final bool isMarked;
+  final bool isMarkedSuccess;
+  final bool isMarkedUnsuccess;
   final bool isQuestionOwner;
+  final bool isAnswerOwner;
 
   final VoidCallback onUpvote;
   final VoidCallback onDownvote;
   final VoidCallback onDelete;
   final VoidCallback onToggleAccept;
-  final VoidCallback onToggleMark;
+  final VoidCallback onToggleMarkSuccess;
+  final VoidCallback onToggleMarkUnsuccess;
 
   @override
   Widget build(BuildContext context) {
@@ -41,21 +46,14 @@ class AnswerCard extends StatelessWidget {
 
     return Container(
       color: colors.surface,
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        14,
-        16,
-        12,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AnswerAuthorAvatar(
-                imageUrl: answer.authorProfileImageUrl,
-              ),
+              AnswerAuthorAvatar(imageUrl: answer.authorProfileImageUrl),
 
               const SizedBox(width: 10),
 
@@ -76,20 +74,21 @@ class AnswerCard extends StatelessWidget {
                         timestamp: answer.timestamp,
                         isUpvoted: isUpvoted,
                         isDownvoted: isDownvoted,
-                        isMarked: isMarked,
+                        isMarkedSuccess: isMarkedSuccess,
+                        isMarkedUnsuccess: isMarkedUnsuccess,
                         isApproved: answer.isApproved,
                         isQuestionOwner: isQuestionOwner,
+                        isAnswerOwner: isAnswerOwner,
                         onUpvote: onUpvote,
                         onDownvote: onDownvote,
                         onDelete: onDelete,
                         onToggleAccept: onToggleAccept,
-                        onToggleMark: onToggleMark,
+                        onToggleMarkSuccess: onToggleMarkSuccess,
+                        onToggleMarkUnsuccess: onToggleMarkUnsuccess,
                       ),
                     ),
 
-                    AnswerUpvotesBadge(
-                      upvotes: answer.upVotes,
-                    ),
+                    AnswerUpvotesBadge(upvotes: answer.upVotes),
                   ],
                 ),
               ),
@@ -98,10 +97,7 @@ class AnswerCard extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          Divider(
-            height: 1,
-            color: colors.outlineVariant,
-          ),
+          Divider(height: 1, color: colors.outlineVariant),
         ],
       ),
     );

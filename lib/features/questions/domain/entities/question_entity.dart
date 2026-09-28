@@ -156,6 +156,9 @@ class Answer {
     this.authorReputation,
     required this.upVotedByCurrentUser,
     required this.downVotedByCurrentUser,
+    required this.markedSuccessedByCurrentUser,
+    required this.markedUnsuccessedByCurrentUser,
+    this.successRecordId,
   });
 
   final String id;
@@ -171,6 +174,9 @@ class Answer {
   final bool? upVotedByCurrentUser;
   final bool? downVotedByCurrentUser;
   final DateTime createdAt;
+  final bool markedSuccessedByCurrentUser;
+  final bool markedUnsuccessedByCurrentUser;
+  final String? successRecordId;
 
   int get upvotes => upVotes;
   bool get isApproved => isAccepted;
@@ -190,6 +196,9 @@ class Answer {
     bool? upVotedByCurrentUser,
     bool? downVotedByCurrentUser,
     DateTime? createdAt,
+    bool? markedSuccessedByCurrentUser,
+    bool? markedUnsuccessedByCurrentUser,
+    String? successRecordId,
   }) {
     return Answer(
       id: id ?? this.id,
@@ -205,7 +214,13 @@ class Answer {
       isAccepted: isAccepted ?? this.isAccepted,
       createdAt: createdAt ?? this.createdAt,
       upVotedByCurrentUser: upVotedByCurrentUser ?? this.upVotedByCurrentUser,
-      downVotedByCurrentUser: downVotedByCurrentUser ?? this.downVotedByCurrentUser,
+      downVotedByCurrentUser:
+          downVotedByCurrentUser ?? this.downVotedByCurrentUser,
+      markedSuccessedByCurrentUser:
+          markedSuccessedByCurrentUser ?? this.markedSuccessedByCurrentUser,
+      markedUnsuccessedByCurrentUser:
+          markedUnsuccessedByCurrentUser ?? this.markedUnsuccessedByCurrentUser,
+      successRecordId: successRecordId ?? this.successRecordId,
     );
   }
 }

@@ -10,11 +10,13 @@ abstract class AnswersRemoteDataSource {
   Future<bool> createAnswer(AnswerModel answer);
   Future<bool> deleteAnswer(String answer);
   Future<bool> voteAnswer(String id, int type);
+  Future<bool> removevote(String idanswer);
   Future<bool> acceptAnswer(String answerId);
   Future<bool> unacceptAnswer(String answerId);
-   Future<bool> markAnswer(String answerId);
-   Future<bool> unmarkAnswer(String answerId);
-
+  Future<String?> markAnswer(String answerId);
+  Future<String?> markUnsuccessfulAnswer(String answerId);
+  Future<bool> removemarkAnswer(String successRecordId);
+  Future<Map<String, String>> getUserAnswerVotes();
 }
 
 class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
@@ -93,16 +95,51 @@ class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/votes/answer/$id',
-        data: <String, dynamic>{'type': type},
         queryParameters: <String, dynamic>{'type': type},
       );
-      final apiResponse = ApiResponse<bool>.fromJson(
+
+      final apiResponse = ApiResponse<dynamic>.fromJson(
         response.data ?? <String, dynamic>{},
       );
 
       return apiResponse.succeeded;
     } on DioException catch (error) {
-      throw mapDioException(error);
+      final responseData = error.response?.data;
+
+      if (responseData is Map<String, dynamic>) {
+        final message = responseData['message'];
+
+        if (message is String && message.isNotEmpty) {
+          throw ServerFailure(message);
+        }
+      }
+
+      throw ServerFailure(
+        mapDioException(error).message ?? 'Something went wrong',
+      );
+    } on ApiException catch (e) {
+      throw ServerFailure(e.message);
+    }
+  }
+
+  @override
+  Future<bool> removevote(String voteid) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/votes/$voteid/remove',
+      );
+      final apiResponse = ApiResponse<bool>.fromJson(
+        response.data ?? <String, dynamic>{},
+        fromJsonT: (json) => json is bool ? json : true,
+      );
+
+      return apiResponse.succeeded;
+    } on DioException catch (error) {
+      throw ServerFailure(
+        mapDioException(error).errors?.values.first.toString() ?? "",
+      );
+    } on ApiException catch (e) {
+      throw ServerFailure(e.message);
     }
   }
 
@@ -141,9 +178,37 @@ class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
   }
 
   @override
-  Future<bool> markAnswer(String answerId) async {
-     try {
+  Future<String?> markAnswer(String answerId) async {
+    try {
       final response = await _dio.post('/answers/$answerId/mark-as-successful');
+      return _extractSuccessRecordId(response.data);
+    } on DioException catch (e) {
+      throw ServerFailure(mapDioException(e).message);
+    } on ApiException catch (e) {
+      throw ServerFailure(e.message);
+    }
+  }
+
+  @override
+  Future<String?> markUnsuccessfulAnswer(String answerId) async {
+    try {
+      final response = await _dio.post(
+        '/answers/$answerId/mark-as-unsuccessful',
+      );
+      return _extractSuccessRecordId(response.data);
+    } on DioException catch (e) {
+      throw ServerFailure(mapDioException(e).message);
+    } on ApiException catch (e) {
+      throw ServerFailure(e.message);
+    }
+  }
+
+  @override
+  Future<bool> removemarkAnswer(String successRecordId) async {
+    try {
+      final response = await _dio.delete(
+        '/answers/successful-mark/$successRecordId/delete',
+      );
       final apiResponse = ApiResponse<bool>.fromJson(
         response.data ?? <String, dynamic>{},
         fromJsonT: (json) => json as bool? ?? true,
@@ -157,20 +222,76 @@ class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
     }
   }
 
+  String? _extractSuccessRecordId(dynamic responseData) {
+    if (responseData is Map<String, dynamic>) {
+      final innerData = responseData['data'];
+      if (innerData is Map<String, dynamic>) {
+        final id = innerData['successRecordId']?.toString() ??
+            innerData['recordId']?.toString() ??
+            innerData['id']?.toString();
+        if (id != null && id.isNotEmpty) return id;
+      } else if (innerData is String && innerData.isNotEmpty) {
+        return innerData;
+      }
+
+      final directId = responseData['successRecordId']?.toString() ??
+          responseData['recordId']?.toString() ??
+          responseData['id']?.toString();
+      if (directId != null && directId.isNotEmpty) return directId;
+    }
+    return null;
+  }
+
   @override
-  Future<bool> unmarkAnswer(String answerId) async{
-try {
-      final response = await _dio.post('/answers/$answerId/unmark-as-successful');
-      final apiResponse = ApiResponse<bool>.fromJson(
-        response.data ?? <String, dynamic>{},
-        fromJsonT: (json) => json as bool? ?? true,
+  Future<Map<String, String>> getUserAnswerVotes() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/votes/user/votes/answers',
       );
 
-      return apiResponse.succeeded;
-    } on DioException catch (e) {
-      throw ServerFailure(mapDioException(e).message);
-    } on ApiException catch (e) {
-      throw ServerFailure(e.message);
+      final apiResponse = ApiResponse<List<dynamic>>.fromJson(
+        response.data ?? <String, dynamic>{},
+        fromJsonT: (json) => json as List<dynamic>? ?? <dynamic>[],
+      );
+
+      final result = <String, String>{};
+
+      if (apiResponse.succeeded && apiResponse.data != null) {
+        for (final item in apiResponse.data!) {
+          if (item is! Map<String, dynamic>) {
+            continue;
+          }
+
+          final voteId = item['voteId']?.toString();
+
+          final answerObj = item['answer'];
+
+          final answerId = answerObj is Map
+              ? answerObj['id']?.toString()
+              : item['answerId']?.toString();
+
+          if (voteId != null &&
+              voteId.isNotEmpty &&
+              answerId != null &&
+              answerId.isNotEmpty) {
+            result[answerId] = voteId;
+          }
+        }
+      }
+
+      return result;
+    } on DioException catch (error) {
+      final responseData = error.response?.data;
+
+      if (responseData is Map<String, dynamic>) {
+        final message = responseData['message'];
+
+        if (message is String && message.isNotEmpty) {
+          throw ServerFailure(message);
+        }
+      }
+
+      throw ServerFailure(mapDioException(error).message);
     }
   }
 }

@@ -10,27 +10,33 @@ class AnswerActionsBar extends StatelessWidget {
     required this.timestamp,
     required this.isUpvoted,
     required this.isDownvoted,
-    required this.isMarked,
+    required this.isMarkedSuccess,
+    required this.isMarkedUnsuccess,
     required this.isApproved,
     required this.isQuestionOwner,
     this.onUpvote,
     this.onDownvote,
     this.onDelete,
     this.onToggleAccept,
-    this.onToggleMark,
+    this.onToggleMarkSuccess,
+    this.onToggleMarkUnsuccess,
+    required this.isAnswerOwner,
   });
 
   final DateTime timestamp;
   final bool isUpvoted;
   final bool isDownvoted;
-  final bool isMarked;
+  final bool isMarkedSuccess;
+  final bool isMarkedUnsuccess;
   final bool isApproved;
   final bool isQuestionOwner;
+  final bool isAnswerOwner;
   final VoidCallback? onUpvote;
   final VoidCallback? onDownvote;
   final VoidCallback? onDelete;
   final VoidCallback? onToggleAccept;
-  final VoidCallback? onToggleMark;
+  final VoidCallback? onToggleMarkSuccess;
+  final VoidCallback? onToggleMarkUnsuccess;
 
   @override
   Widget build(BuildContext context) {
@@ -40,10 +46,7 @@ class AnswerActionsBar extends StatelessWidget {
       children: [
         Text(
           intl.DateFormat.MMMd().format(timestamp),
-          style: TextStyle(
-            fontSize: 11,
-            color: colors.onSurfaceVariant,
-          ),
+          style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
         ),
         const SizedBox(width: 12),
         CommentAction(
@@ -60,12 +63,16 @@ class AnswerActionsBar extends StatelessWidget {
           onTap: onDownvote ?? () {},
         ),
         const SizedBox(width: 12),
-        CommentAction(
-          label: 'Delete',
-          isActive: false,
-          activeColor: colors.error,
-          onTap: onDelete ?? () {},
-        ),
+
+        if (isAnswerOwner) ...[
+          CommentAction(
+            label: 'Delete',
+            isActive: false,
+            activeColor: colors.error,
+            onTap: onDelete ?? () {},
+          ),
+        ],
+
         if (isQuestionOwner) ...[
           const SizedBox(width: 12),
           CommentAction(
@@ -75,13 +82,22 @@ class AnswerActionsBar extends StatelessWidget {
             onTap: onToggleAccept ?? () {},
           ),
         ] else ...[
-          const SizedBox(width: 12),
-          CommentAction(
-            label: isMarked ? 'Unmark' : 'Mark',
-            isActive: isMarked,
-            activeColor: colors.secondary,
-            onTap: onToggleMark ?? () {},
-          ),
+          if (!isAnswerOwner) ...[
+            const SizedBox(width: 12),
+            CommentAction(
+              label: 'Successful',
+              isActive: isMarkedSuccess,
+              activeColor: colors.secondary,
+              onTap: onToggleMarkSuccess ?? () {},
+            ),
+            const SizedBox(width: 12),
+            CommentAction(
+              label: 'Unsuccessful',
+              isActive: isMarkedUnsuccess,
+              activeColor: colors.error,
+              onTap: onToggleMarkUnsuccess ?? () {},
+            ),
+          ],
         ],
         const Spacer(),
         if (isApproved)
