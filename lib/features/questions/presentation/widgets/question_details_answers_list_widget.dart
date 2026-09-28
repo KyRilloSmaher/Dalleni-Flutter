@@ -25,25 +25,33 @@ class QuestionDetailsAnswersListWidget extends ConsumerWidget {
       questionDetailsControllerProvider(questionId).notifier,
     );
     final currentUserId = ref.read(localStorageServiceProvider).getUserId();
-    final isQuestionOwner = 
-    currentUserId != null && currentUserId == questionUserId;
+    final isQuestionOwner =
+        currentUserId != null && currentUserId == questionUserId;
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
         final answer = answers[index];
-        final isMarked = state.markedAnswers[answer.id] ?? false;
+        final isMarkedSuccess =
+            state.markedSuccessAnswers[answer.id] ??
+            answer.markedSuccessedByCurrentUser;
+        final isMarkedUnsuccess =
+            state.markedUnsuccessAnswers[answer.id] ??
+            answer.markedUnsuccessedByCurrentUser;
 
         return AnswerCard(
           isUpvoted: answer.upVotedByCurrentUser ?? false,
           isDownvoted: answer.downVotedByCurrentUser ?? false,
           answer: answer,
-          isMarked: isMarked,
+          isMarkedSuccess: isMarkedSuccess,
+          isMarkedUnsuccess: isMarkedUnsuccess,
           isQuestionOwner: isQuestionOwner,
           onUpvote: () => controller.upvoteAnswer(answer.id),
           onDownvote: () => controller.downvoteAnswer(answer.id),
           onDelete: () => controller.deleteComment(answer.id),
           onToggleAccept: () => controller.toggleAcceptForAnswer(answer),
-          onToggleMark: () => controller.toggleMarkForAnswer(answer),
+          onToggleMarkSuccess: () => controller.toggleMarkSuccess(answer.id),
+          onToggleMarkUnsuccess: () =>
+              controller.toggleMarkUnsuccess(answer.id),
         );
       }, childCount: answers.length),
     );

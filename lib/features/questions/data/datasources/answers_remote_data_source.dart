@@ -13,8 +13,8 @@ abstract class AnswersRemoteDataSource {
   Future<bool> removevote(String idanswer);
   Future<bool> acceptAnswer(String answerId);
   Future<bool> unacceptAnswer(String answerId);
-  Future<bool> markAnswer(String answerId);
-  Future<bool> unmarkAnswer(String answerId);
+  Future<String?> markAnswer(String answerId);
+  Future<String?> markUnsuccessfulAnswer(String answerId);
   Future<bool> removemarkAnswer(String successRecordId);
   Future<Map<String, String>> getUserAnswerVotes();
 }
@@ -178,15 +178,10 @@ class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
   }
 
   @override
-  Future<bool> markAnswer(String answerId) async {
+  Future<String?> markAnswer(String answerId) async {
     try {
       final response = await _dio.post('/answers/$answerId/mark-as-successful');
-      final apiResponse = ApiResponse<bool>.fromJson(
-        response.data ?? <String, dynamic>{},
-        fromJsonT: (json) => json as bool? ?? true,
-      );
-
-      return apiResponse.succeeded;
+      return _extractSuccessRecordId(response.data);
     } on DioException catch (e) {
       throw ServerFailure(mapDioException(e).message);
     } on ApiException catch (e) {
@@ -195,17 +190,12 @@ class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
   }
 
   @override
-  Future<bool> unmarkAnswer(String answerId) async {
+  Future<String?> markUnsuccessfulAnswer(String answerId) async {
     try {
       final response = await _dio.post(
-        '/answers/$answerId/unmark-as-successful',
+        '/answers/$answerId/mark-as-unsuccessful',
       );
-      final apiResponse = ApiResponse<bool>.fromJson(
-        response.data ?? <String, dynamic>{},
-        fromJsonT: (json) => json as bool? ?? true,
-      );
-
-      return apiResponse.succeeded;
+      return _extractSuccessRecordId(response.data);
     } on DioException catch (e) {
       throw ServerFailure(mapDioException(e).message);
     } on ApiException catch (e) {
@@ -230,6 +220,26 @@ class AnswersRemoteDataSourceImpl implements AnswersRemoteDataSource {
     } on ApiException catch (e) {
       throw ServerFailure(e.message);
     }
+  }
+
+  String? _extractSuccessRecordId(dynamic responseData) {
+    if (responseData is Map<String, dynamic>) {
+      final innerData = responseData['data'];
+      if (innerData is Map<String, dynamic>) {
+        final id = innerData['successRecordId']?.toString() ??
+            innerData['recordId']?.toString() ??
+            innerData['id']?.toString();
+        if (id != null && id.isNotEmpty) return id;
+      } else if (innerData is String && innerData.isNotEmpty) {
+        return innerData;
+      }
+
+      final directId = responseData['successRecordId']?.toString() ??
+          responseData['recordId']?.toString() ??
+          responseData['id']?.toString();
+      if (directId != null && directId.isNotEmpty) return directId;
+    }
+    return null;
   }
 
   @override

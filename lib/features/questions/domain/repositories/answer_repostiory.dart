@@ -12,8 +12,8 @@ abstract class AnswersRepository {
   Future<bool> acceptAnswer(String answerId);
   Future<bool> unacceptAnswer(String answerId);
     Future<bool> deleteAnswer(String answerId);
-     Future<bool> markAnswer(String answerId);
-   Future<bool> unmarkAnswer(String answerId);
-   Future<bool> removemarkAnswer(String successRecordId);
+  Future<String?> markAnswer(String answerId);
+  Future<String?> markUnsuccessfulAnswer(String answerId);
+  Future<bool> removemarkAnswer(String successRecordId);
      Future<Map<String, String>> getUserAnswerVotes();
 }

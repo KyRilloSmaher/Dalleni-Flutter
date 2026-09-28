@@ -83,6 +83,9 @@ class AnswerModel extends Answer {
     super.authorReputation,
     required super.upVotedByCurrentUser,
     required super.downVotedByCurrentUser,
+    required super.markedSuccessedByCurrentUser,
+    required super.markedUnsuccessedByCurrentUser,
+    super.successRecordId,
   });
 
   factory AnswerModel.fromJson(Map<String, dynamic> json) {
@@ -101,8 +104,13 @@ class AnswerModel extends Answer {
           DateTime.tryParse(json['createdAt'] as String? ?? '')?.toUtc() ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       upVotedByCurrentUser: json['upVotedByCurrentUser'] as bool?,
-
       downVotedByCurrentUser: json['downVotedByCurrentUser'] as bool?,
+      markedSuccessedByCurrentUser:
+          json['markedSuccessedByCurrentUser'] as bool? ?? false,
+      markedUnsuccessedByCurrentUser:
+          json['markedUnsuccessedByCurrentUser'] as bool? ?? false,
+      successRecordId:
+          json['successRecordId']?.toString() ?? json['recordId']?.toString(),
     );
   }
 

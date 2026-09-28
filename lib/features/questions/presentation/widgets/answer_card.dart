@@ -13,27 +13,31 @@ class AnswerCard extends StatelessWidget {
     required this.answer,
     required this.isUpvoted,
     required this.isDownvoted,
-    required this.isMarked,
+    required this.isMarkedSuccess,
+    required this.isMarkedUnsuccess,
     required this.isQuestionOwner,
     required this.onUpvote,
     required this.onDownvote,
     required this.onDelete,
     required this.onToggleAccept,
-    required this.onToggleMark,
+    required this.onToggleMarkSuccess,
+    required this.onToggleMarkUnsuccess,
   });
 
   final Answer answer;
 
   final bool isUpvoted;
   final bool isDownvoted;
-  final bool isMarked;
+  final bool isMarkedSuccess;
+  final bool isMarkedUnsuccess;
   final bool isQuestionOwner;
 
   final VoidCallback onUpvote;
   final VoidCallback onDownvote;
   final VoidCallback onDelete;
   final VoidCallback onToggleAccept;
-  final VoidCallback onToggleMark;
+  final VoidCallback onToggleMarkSuccess;
+  final VoidCallback onToggleMarkUnsuccess;
 
   @override
   Widget build(BuildContext context) {
@@ -76,14 +80,16 @@ class AnswerCard extends StatelessWidget {
                         timestamp: answer.timestamp,
                         isUpvoted: isUpvoted,
                         isDownvoted: isDownvoted,
-                        isMarked: isMarked,
+                        isMarkedSuccess: isMarkedSuccess,
+                        isMarkedUnsuccess: isMarkedUnsuccess,
                         isApproved: answer.isApproved,
                         isQuestionOwner: isQuestionOwner,
                         onUpvote: onUpvote,
                         onDownvote: onDownvote,
                         onDelete: onDelete,
                         onToggleAccept: onToggleAccept,
-                        onToggleMark: onToggleMark,
+                        onToggleMarkSuccess: onToggleMarkSuccess,
+                        onToggleMarkUnsuccess: onToggleMarkUnsuccess,
                       ),
                     ),
 

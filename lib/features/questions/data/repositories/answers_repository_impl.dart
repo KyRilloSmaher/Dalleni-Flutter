@@ -33,6 +33,8 @@ class AnswersRepositoryImpl implements AnswersRepository {
       createdAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       upVotedByCurrentUser: false,
       downVotedByCurrentUser: false,
+      markedSuccessedByCurrentUser: false,
+      markedUnsuccessedByCurrentUser: false,
     );
     return _remoteDataSource.createAnswer(model);
   }
@@ -63,13 +65,13 @@ class AnswersRepositoryImpl implements AnswersRepository {
   }
 
   @override
-  Future<bool> markAnswer(String answerId) {
+  Future<String?> markAnswer(String answerId) {
     return _remoteDataSource.markAnswer(answerId);
   }
 
   @override
-  Future<bool> unmarkAnswer(String answerId) {
-    return _remoteDataSource.unmarkAnswer(answerId);
+  Future<String?> markUnsuccessfulAnswer(String answerId) {
+    return _remoteDataSource.markUnsuccessfulAnswer(answerId);
   }
 
   @override

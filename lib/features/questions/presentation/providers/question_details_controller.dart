@@ -10,7 +10,9 @@ class QuestionDetailsState {
     this.activeQuestion,
     this.errorMessage,
     required this.answers,
-    required this.markedAnswers,
+    required this.markedSuccessAnswers,
+    required this.markedUnsuccessAnswers,
+    required this.answerRecordIds,
     required this.answerVoteIds,
     required this.isQuestionOwner,
     required this.isCheckingOwner,
@@ -21,8 +23,14 @@ class QuestionDetailsState {
   final String? errorMessage;
   final List<Answer> answers;
 
-  /// answerId -> whether current user marked this answer
-  final Map<String, bool> markedAnswers;
+  /// answerId -> whether current user marked this answer as successful
+  final Map<String, bool> markedSuccessAnswers;
+
+  /// answerId -> whether current user marked this answer as unsuccessful
+  final Map<String, bool> markedUnsuccessAnswers;
+
+  /// answerId -> successRecordId
+  final Map<String, String> answerRecordIds;
 
   /// answerId -> voteId
   final Map<String, String> answerVoteIds;
@@ -34,7 +42,9 @@ class QuestionDetailsState {
     return const QuestionDetailsState(
       isLoading: true,
       answers: [],
-      markedAnswers: {},
+      markedSuccessAnswers: {},
+      markedUnsuccessAnswers: {},
+      answerRecordIds: {},
       answerVoteIds: {},
       isQuestionOwner: false,
       isCheckingOwner: true,
@@ -46,7 +56,9 @@ class QuestionDetailsState {
     Question? activeQuestion,
     String? errorMessage,
     List<Answer>? answers,
-    Map<String, bool>? markedAnswers,
+    Map<String, bool>? markedSuccessAnswers,
+    Map<String, bool>? markedUnsuccessAnswers,
+    Map<String, String>? answerRecordIds,
     Map<String, String>? answerVoteIds,
     bool? isQuestionOwner,
     bool? isCheckingOwner,
@@ -57,7 +69,10 @@ class QuestionDetailsState {
       activeQuestion: activeQuestion ?? this.activeQuestion,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       answers: answers ?? this.answers,
-      markedAnswers: markedAnswers ?? this.markedAnswers,
+      markedSuccessAnswers: markedSuccessAnswers ?? this.markedSuccessAnswers,
+      markedUnsuccessAnswers:
+          markedUnsuccessAnswers ?? this.markedUnsuccessAnswers,
+      answerRecordIds: answerRecordIds ?? this.answerRecordIds,
       answerVoteIds: answerVoteIds ?? this.answerVoteIds,
       isQuestionOwner: isQuestionOwner ?? this.isQuestionOwner,
       isCheckingOwner: isCheckingOwner ?? this.isCheckingOwner,
@@ -179,7 +194,45 @@ class QuestionDetailsController
 
       final answers = await repository.getAnswers(questionId);
 
-      state = state.copyWith(isLoading: false, answers: answers);
+      final newMarkedSuccess = Map<String, bool>.from(
+        state.markedSuccessAnswers,
+      );
+      final newMarkedUnsuccess = Map<String, bool>.from(
+        state.markedUnsuccessAnswers,
+      );
+      final newRecordIds = Map<String, String>.from(state.answerRecordIds);
+
+      final updatedAnswers = answers
+          .map((answer) {
+            final isSuccess =
+                newMarkedSuccess[answer.id] ??
+                answer.markedSuccessedByCurrentUser;
+            final isUnsuccess =
+                newMarkedUnsuccess[answer.id] ??
+                answer.markedUnsuccessedByCurrentUser;
+            final recordId = newRecordIds[answer.id] ?? answer.successRecordId;
+
+            newMarkedSuccess[answer.id] = isSuccess;
+            newMarkedUnsuccess[answer.id] = isUnsuccess;
+            if (recordId != null && recordId.isNotEmpty) {
+              newRecordIds[answer.id] = recordId;
+            }
+
+            return answer.copyWith(
+              markedSuccessedByCurrentUser: isSuccess,
+              markedUnsuccessedByCurrentUser: isUnsuccess,
+              successRecordId: recordId,
+            );
+          })
+          .toList(growable: false);
+
+      state = state.copyWith(
+        isLoading: false,
+        answers: updatedAnswers,
+        markedSuccessAnswers: newMarkedSuccess,
+        markedUnsuccessAnswers: newMarkedUnsuccess,
+        answerRecordIds: newRecordIds,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
@@ -417,68 +470,217 @@ class QuestionDetailsController
   // MARK
   // ---------------------------------------------------------------------------
 
-  Future<void> toggleMarkForAnswer(Answer answer) async {
-    final isMarked = state.markedAnswers[answer.id] ?? false;
+  Future<void> toggleMarkSuccess(String answerId) async {
+    final wasSuccess = state.markedSuccessAnswers[answerId] ?? false;
+    final oldRecordId = state.answerRecordIds[answerId];
 
-    await toggleMarkAnswer(answerId: answer.id, shouldMark: !isMarked);
-  }
+    final targetIsSuccess = !wasSuccess;
+    final targetIsUnsuccess = false;
 
-  Future<void> toggleMarkAnswer({
-    required String answerId,
-    required bool shouldMark,
-  }) async {
-    final oldValue = state.markedAnswers[answerId] ?? false;
+    final originalSuccess = Map<String, bool>.from(state.markedSuccessAnswers);
+    final originalUnsuccess = Map<String, bool>.from(
+      state.markedUnsuccessAnswers,
+    );
+    final originalRecordIds = Map<String, String>.from(state.answerRecordIds);
+    final originalAnswers = state.answers;
 
-    final updatedMarks = {...state.markedAnswers, answerId: shouldMark};
+    final updatedSuccessMap = Map<String, bool>.from(
+      state.markedSuccessAnswers,
+    );
+    final updatedUnsuccessMap = Map<String, bool>.from(
+      state.markedUnsuccessAnswers,
+    );
+    final updatedRecordIdsMap = Map<String, String>.from(state.answerRecordIds);
 
-    // Optimistic update.
-    state = state.copyWith(markedAnswers: updatedMarks);
+    updatedSuccessMap[answerId] = targetIsSuccess;
+    updatedUnsuccessMap[answerId] = targetIsUnsuccess;
+
+    // Optimistic UI
+    state = state.copyWith(
+      markedSuccessAnswers: updatedSuccessMap,
+      markedUnsuccessAnswers: updatedUnsuccessMap,
+      answerRecordIds: updatedRecordIdsMap,
+      answers: state.answers
+          .map((answer) {
+            if (answer.id != answerId) return answer;
+
+            return answer.copyWith(
+              markedSuccessedByCurrentUser: targetIsSuccess,
+              markedUnsuccessedByCurrentUser: targetIsUnsuccess,
+              successRecordId: targetIsSuccess
+                  ? updatedRecordIdsMap[answerId]
+                  : null,
+            );
+          })
+          .toList(growable: false),
+    );
 
     try {
       final repository = ref.read(answersRepositoryProvider);
 
-      final success = shouldMark
-          ? await repository.markAnswer(answerId)
-          : await repository.unmarkAnswer(answerId);
-
-      if (!success) {
-        _rollbackMark(answerId: answerId, oldValue: oldValue);
+      // Remove existing mark record first when switching/unmarking.
+      if (oldRecordId != null && oldRecordId.isNotEmpty) {
+        await repository.removemarkAnswer(oldRecordId);
+        updatedRecordIdsMap.remove(answerId);
       }
-    } catch (_) {
-      _rollbackMark(answerId: answerId, oldValue: oldValue);
+
+      // Add Successful Mark.
+      if (targetIsSuccess) {
+        final newRecordId = await repository.markAnswer(answerId);
+
+        if (newRecordId == null || newRecordId.isEmpty) {
+          throw Exception('Failed to get successRecordId');
+        }
+
+        updatedRecordIdsMap[answerId] = newRecordId;
+
+        state = state.copyWith(
+          answerRecordIds: updatedRecordIdsMap,
+          answers: state.answers
+              .map((answer) {
+                if (answer.id != answerId) return answer;
+
+                return answer.copyWith(
+                  markedSuccessedByCurrentUser: true,
+                  markedUnsuccessedByCurrentUser: false,
+                  successRecordId: newRecordId,
+                );
+              })
+              .toList(growable: false),
+        );
+      } else {
+        // Successfully removed the mark.
+        state = state.copyWith(
+          answerRecordIds: updatedRecordIdsMap,
+          answers: state.answers
+              .map((answer) {
+                if (answer.id != answerId) return answer;
+
+                return answer.copyWith(
+                  markedSuccessedByCurrentUser: false,
+                  successRecordId: null,
+                );
+              })
+              .toList(growable: false),
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(
+        markedSuccessAnswers: originalSuccess,
+        markedUnsuccessAnswers: originalUnsuccess,
+        answerRecordIds: originalRecordIds,
+        answers: originalAnswers,
+        errorMessage: e.toString(),
+      );
     }
   }
 
-  void _rollbackMark({required String answerId, required bool oldValue}) {
-    state = state.copyWith(
-      markedAnswers: {...state.markedAnswers, answerId: oldValue},
+  Future<void> toggleMarkUnsuccess(String answerId) async {
+    final wasUnsuccess = state.markedUnsuccessAnswers[answerId] ?? false;
+
+    final oldRecordId = state.answerRecordIds[answerId];
+
+    final targetIsSuccess = false;
+    final targetIsUnsuccess = !wasUnsuccess;
+
+    final originalSuccess = Map<String, bool>.from(state.markedSuccessAnswers);
+    final originalUnsuccess = Map<String, bool>.from(
+      state.markedUnsuccessAnswers,
     );
-  }
+    final originalRecordIds = Map<String, String>.from(state.answerRecordIds);
+    final originalAnswers = state.answers;
 
-  // ---------------------------------------------------------------------------
-  // HELPERS
-  // ---------------------------------------------------------------------------
+    final updatedSuccessMap = Map<String, bool>.from(
+      state.markedSuccessAnswers,
+    );
+    final updatedUnsuccessMap = Map<String, bool>.from(
+      state.markedUnsuccessAnswers,
+    );
+    final updatedRecordIdsMap = Map<String, String>.from(state.answerRecordIds);
 
-  Answer? _findAnswer(String answerId) {
-    for (final answer in state.answers) {
-      if (answer.id == answerId) {
-        return answer;
+    updatedSuccessMap[answerId] = targetIsSuccess;
+    updatedUnsuccessMap[answerId] = targetIsUnsuccess;
+
+    // Optimistic UI
+    state = state.copyWith(
+      markedSuccessAnswers: updatedSuccessMap,
+      markedUnsuccessAnswers: updatedUnsuccessMap,
+      answerRecordIds: updatedRecordIdsMap,
+      answers: state.answers
+          .map((answer) {
+            if (answer.id != answerId) return answer;
+
+            return answer.copyWith(
+              markedSuccessedByCurrentUser: false,
+              markedUnsuccessedByCurrentUser: targetIsUnsuccess,
+              successRecordId: targetIsUnsuccess
+                  ? updatedRecordIdsMap[answerId]
+                  : null,
+            );
+          })
+          .toList(growable: false),
+    );
+
+    try {
+      final repository = ref.read(answersRepositoryProvider);
+
+      // Remove existing mark record first when switching/unmarking.
+      if (oldRecordId != null && oldRecordId.isNotEmpty) {
+        await repository.removemarkAnswer(oldRecordId);
+        updatedRecordIdsMap.remove(answerId);
       }
+
+      // Add Unsuccessful Mark.
+      if (targetIsUnsuccess) {
+        final newRecordId = await repository.markUnsuccessfulAnswer(answerId);
+
+        if (newRecordId == null || newRecordId.isEmpty) {
+          throw Exception('Failed to get successRecordId');
+        }
+
+        // Same record map is used for both Successful
+        // and Unsuccessful marks.
+        updatedRecordIdsMap[answerId] = newRecordId;
+
+        state = state.copyWith(
+          answerRecordIds: updatedRecordIdsMap,
+          answers: state.answers
+              .map((answer) {
+                if (answer.id != answerId) return answer;
+
+                return answer.copyWith(
+                  markedSuccessedByCurrentUser: false,
+                  markedUnsuccessedByCurrentUser: true,
+                  successRecordId: newRecordId,
+                );
+              })
+              .toList(growable: false),
+        );
+      } else {
+        // Successfully removed the Unsuccessful mark.
+        state = state.copyWith(
+          answerRecordIds: updatedRecordIdsMap,
+          answers: state.answers
+              .map((answer) {
+                if (answer.id != answerId) return answer;
+
+                return answer.copyWith(
+                  markedUnsuccessedByCurrentUser: false,
+                  successRecordId: null,
+                );
+              })
+              .toList(growable: false),
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(
+        markedSuccessAnswers: originalSuccess,
+        markedUnsuccessAnswers: originalUnsuccess,
+        answerRecordIds: originalRecordIds,
+        answers: originalAnswers,
+        errorMessage: e.toString(),
+      );
     }
-
-    return null;
-  }
-
-  void _updateAnswer(Answer updatedAnswer) {
-    final updatedAnswers = state.answers.map((answer) {
-      if (answer.id == updatedAnswer.id) {
-        return updatedAnswer;
-      }
-
-      return answer;
-    }).toList();
-
-    state = state.copyWith(answers: updatedAnswers);
   }
 }
 

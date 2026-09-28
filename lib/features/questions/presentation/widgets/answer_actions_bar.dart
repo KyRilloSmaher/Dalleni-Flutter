@@ -10,27 +10,31 @@ class AnswerActionsBar extends StatelessWidget {
     required this.timestamp,
     required this.isUpvoted,
     required this.isDownvoted,
-    required this.isMarked,
+    required this.isMarkedSuccess,
+    required this.isMarkedUnsuccess,
     required this.isApproved,
     required this.isQuestionOwner,
     this.onUpvote,
     this.onDownvote,
     this.onDelete,
     this.onToggleAccept,
-    this.onToggleMark,
+    this.onToggleMarkSuccess,
+    this.onToggleMarkUnsuccess,
   });
 
   final DateTime timestamp;
   final bool isUpvoted;
   final bool isDownvoted;
-  final bool isMarked;
+  final bool isMarkedSuccess;
+  final bool isMarkedUnsuccess;
   final bool isApproved;
   final bool isQuestionOwner;
   final VoidCallback? onUpvote;
   final VoidCallback? onDownvote;
   final VoidCallback? onDelete;
   final VoidCallback? onToggleAccept;
-  final VoidCallback? onToggleMark;
+  final VoidCallback? onToggleMarkSuccess;
+  final VoidCallback? onToggleMarkUnsuccess;
 
   @override
   Widget build(BuildContext context) {
@@ -77,10 +81,17 @@ class AnswerActionsBar extends StatelessWidget {
         ] else ...[
           const SizedBox(width: 12),
           CommentAction(
-            label: isMarked ? 'Unmark' : 'Mark',
-            isActive: isMarked,
+            label: 'Successful',
+            isActive: isMarkedSuccess,
             activeColor: colors.secondary,
-            onTap: onToggleMark ?? () {},
+            onTap: onToggleMarkSuccess ?? () {},
+          ),
+          const SizedBox(width: 12),
+          CommentAction(
+            label: 'Unsuccessful',
+            isActive: isMarkedUnsuccess,
+            activeColor: colors.error,
+            onTap: onToggleMarkUnsuccess ?? () {},
           ),
         ],
         const Spacer(),
