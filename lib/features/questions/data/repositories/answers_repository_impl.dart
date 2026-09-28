@@ -48,6 +48,11 @@ class AnswersRepositoryImpl implements AnswersRepository {
   }
 
   @override
+  Future<bool> removevote(String voteid) {
+    return _remoteDataSource.removevote(voteid);
+  }
+
+  @override
   Future<bool> acceptAnswer(String answerId) {
     return _remoteDataSource.acceptAnswer(answerId);
   }
@@ -65,5 +70,15 @@ class AnswersRepositoryImpl implements AnswersRepository {
   @override
   Future<bool> unmarkAnswer(String answerId) {
     return _remoteDataSource.unmarkAnswer(answerId);
+  }
+
+  @override
+  Future<bool> removemarkAnswer(String successRecordId) {
+    return _remoteDataSource.removemarkAnswer(successRecordId);
+  }
+
+  @override
+  Future<Map<String, String>> getUserAnswerVotes() {
+    return _remoteDataSource.getUserAnswerVotes();
   }
 }

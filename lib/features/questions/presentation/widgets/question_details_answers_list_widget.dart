@@ -25,8 +25,8 @@ class QuestionDetailsAnswersListWidget extends ConsumerWidget {
       questionDetailsControllerProvider(questionId).notifier,
     );
     final currentUserId = ref.read(localStorageServiceProvider).getUserId();
-    final isQuestionOwner =
-        currentUserId != null && currentUserId == questionUserId;
+    final isQuestionOwner = 
+    currentUserId != null && currentUserId == questionUserId;
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
