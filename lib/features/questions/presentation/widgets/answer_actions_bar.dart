@@ -20,6 +20,7 @@ class AnswerActionsBar extends StatelessWidget {
     this.onToggleAccept,
     this.onToggleMarkSuccess,
     this.onToggleMarkUnsuccess,
+    required this.isAnswerOwner,
   });
 
   final DateTime timestamp;
@@ -29,6 +30,7 @@ class AnswerActionsBar extends StatelessWidget {
   final bool isMarkedUnsuccess;
   final bool isApproved;
   final bool isQuestionOwner;
+  final bool isAnswerOwner;
   final VoidCallback? onUpvote;
   final VoidCallback? onDownvote;
   final VoidCallback? onDelete;
@@ -44,10 +46,7 @@ class AnswerActionsBar extends StatelessWidget {
       children: [
         Text(
           intl.DateFormat.MMMd().format(timestamp),
-          style: TextStyle(
-            fontSize: 11,
-            color: colors.onSurfaceVariant,
-          ),
+          style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
         ),
         const SizedBox(width: 12),
         CommentAction(
@@ -64,12 +63,16 @@ class AnswerActionsBar extends StatelessWidget {
           onTap: onDownvote ?? () {},
         ),
         const SizedBox(width: 12),
-        CommentAction(
-          label: 'Delete',
-          isActive: false,
-          activeColor: colors.error,
-          onTap: onDelete ?? () {},
-        ),
+
+        if (isAnswerOwner) ...[
+          CommentAction(
+            label: 'Delete',
+            isActive: false,
+            activeColor: colors.error,
+            onTap: onDelete ?? () {},
+          ),
+        ],
+
         if (isQuestionOwner) ...[
           const SizedBox(width: 12),
           CommentAction(
@@ -79,20 +82,22 @@ class AnswerActionsBar extends StatelessWidget {
             onTap: onToggleAccept ?? () {},
           ),
         ] else ...[
-          const SizedBox(width: 12),
-          CommentAction(
-            label: 'Successful',
-            isActive: isMarkedSuccess,
-            activeColor: colors.secondary,
-            onTap: onToggleMarkSuccess ?? () {},
-          ),
-          const SizedBox(width: 12),
-          CommentAction(
-            label: 'Unsuccessful',
-            isActive: isMarkedUnsuccess,
-            activeColor: colors.error,
-            onTap: onToggleMarkUnsuccess ?? () {},
-          ),
+          if (!isAnswerOwner) ...[
+            const SizedBox(width: 12),
+            CommentAction(
+              label: 'Successful',
+              isActive: isMarkedSuccess,
+              activeColor: colors.secondary,
+              onTap: onToggleMarkSuccess ?? () {},
+            ),
+            const SizedBox(width: 12),
+            CommentAction(
+              label: 'Unsuccessful',
+              isActive: isMarkedUnsuccess,
+              activeColor: colors.error,
+              onTap: onToggleMarkUnsuccess ?? () {},
+            ),
+          ],
         ],
         const Spacer(),
         if (isApproved)

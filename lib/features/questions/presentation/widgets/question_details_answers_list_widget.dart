@@ -31,6 +31,9 @@ class QuestionDetailsAnswersListWidget extends ConsumerWidget {
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
         final answer = answers[index];
+        final isAnswerOwner =
+            currentUserId != null && currentUserId == answers[index].userId;
+
         final isMarkedSuccess =
             state.markedSuccessAnswers[answer.id] ??
             answer.markedSuccessedByCurrentUser;
@@ -45,6 +48,7 @@ class QuestionDetailsAnswersListWidget extends ConsumerWidget {
           isMarkedSuccess: isMarkedSuccess,
           isMarkedUnsuccess: isMarkedUnsuccess,
           isQuestionOwner: isQuestionOwner,
+           isAnswerOwner: isAnswerOwner,
           onUpvote: () => controller.upvoteAnswer(answer.id),
           onDownvote: () => controller.downvoteAnswer(answer.id),
           onDelete: () => controller.deleteComment(answer.id),
