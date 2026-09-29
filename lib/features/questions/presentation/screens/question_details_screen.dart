@@ -97,7 +97,7 @@ class _QuestionDetailsScreenState extends ConsumerState<QuestionDetailsScreen> {
               const SliverToBoxAdapter(child: SizedBox(height: 110)),
             ],
           ),
-
+         //prevent keyboard from covering comment input
           Positioned(
             left: 0,
             right: 0,
