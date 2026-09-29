@@ -57,7 +57,7 @@ class _OfficialEntitiesScreenState
 
     return Scaffold(
       backgroundColor: colors.surfaceContainerLow,
-      extendBodyBehindAppBar: true,
+
       drawer: const AnimatedFunkyDrawer(),
       appBar: CommonGlassAppBar(
         title: context.l10n.translate('officialEntitiesTitle'),
@@ -76,11 +76,6 @@ class _OfficialEntitiesScreenState
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: <Widget>[
-                  // Glass AppBar offset padding
-                  const SliverPadding(
-                    padding: EdgeInsets.only(top: kToolbarHeight + 16),
-                  ),
-
                   // Header Banner Section
                   const OfficialEntitiesHeader(),
 
@@ -105,9 +100,7 @@ class _OfficialEntitiesScreenState
                     )
                   // Empty State
                   else if (state.showEmptyState)
-                    OfficialEntitiesEmpty(
-                      onRetry: controller.refresh,
-                    )
+                    OfficialEntitiesEmpty(onRetry: controller.refresh)
                   // Entities List (ListView.builder delegation via SliverList)
                   else
                     OfficialEntitiesSuccess(
@@ -125,4 +118,3 @@ class _OfficialEntitiesScreenState
     );
   }
 }
-

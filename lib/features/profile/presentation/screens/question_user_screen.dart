@@ -34,7 +34,7 @@ class _SavedQuestionsScreenState extends ConsumerState<QuestionsUserScreen> {
 
     return Scaffold(
       backgroundColor: colors.background,
-      extendBodyBehindAppBar: true,
+    
       appBar: const CommonGlassAppBar(title: 'My Questions'),
       body: _buildBody(context, state),
     );

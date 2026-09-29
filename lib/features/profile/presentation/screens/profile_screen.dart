@@ -19,7 +19,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.background,
-      extendBodyBehindAppBar: true,
+     
       drawer: const AnimatedFunkyDrawer(),
       appBar: CommonGlassAppBar(
         title: l10n.translate('navProfile') ,

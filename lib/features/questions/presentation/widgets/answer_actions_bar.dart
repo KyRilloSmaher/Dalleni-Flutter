@@ -87,7 +87,7 @@ class AnswerActionsBar extends StatelessWidget {
             CommentAction(
               label: 'Successful',
               isActive: isMarkedSuccess,
-              activeColor: colors.secondary,
+              activeColor: Colors.black,
               onTap: onToggleMarkSuccess ?? () {},
             ),
             const SizedBox(width: 12),

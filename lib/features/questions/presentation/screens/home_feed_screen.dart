@@ -53,16 +53,13 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
 
     return Scaffold(
       backgroundColor: colors.surfaceContainerLow,
-      extendBodyBehindAppBar: true,
       drawer: const AnimatedFunkyDrawer(),
       appBar: CommonGlassAppBar(
         title: context.l10n.translate('homeFeedTitle'),
         trailingActions: <Widget>[
           IconButton(
             icon: Icon(
-              showSearchField
-                  ? Icons.search_off_rounded
-                  : Icons.search_rounded,
+              showSearchField ? Icons.search_off_rounded : Icons.search_rounded,
               color: colors.onSurface,
             ),
             tooltip: context.l10n.translate('homeSearchLabel'),
@@ -91,9 +88,6 @@ class _HomeFeedScreenState extends ConsumerState<HomeFeedScreen> {
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: <Widget>[
-                    const SliverPadding(
-                      padding: EdgeInsets.only(top: kToolbarHeight + 16),
-                    ),
                     if (showSearchField)
                       HomeFeedSearchBarWidget(
                         controller: _searchController,

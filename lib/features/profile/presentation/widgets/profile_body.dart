@@ -50,7 +50,7 @@ class ProfileBody extends ConsumerWidget {
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(top: kToolbarHeight + 32, bottom: 100),
+        padding: const EdgeInsets.only(bottom: 100),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 900),
@@ -89,6 +89,7 @@ class ProfileBody extends ConsumerWidget {
                     },
                   ),
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           ),

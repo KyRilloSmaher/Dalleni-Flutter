@@ -34,12 +34,7 @@ class CategoryQuestionsSuccessWidget extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView.separated(
-        padding: const EdgeInsets.only(
-          top: 50,
-          bottom: 40,
-          left: 16,
-          right: 16,
-        ),
+        padding: const EdgeInsets.only(bottom: 40, left: 16, right: 16),
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: questions.length,
         separatorBuilder: (_, __) => const SizedBox(height: 16),

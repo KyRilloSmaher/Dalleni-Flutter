@@ -21,7 +21,7 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.background,
-      extendBodyBehindAppBar: true,
+    
       appBar: _buildBlurredAppBar(context, colors, l10n),
       body: SafeArea(
         bottom: false,
