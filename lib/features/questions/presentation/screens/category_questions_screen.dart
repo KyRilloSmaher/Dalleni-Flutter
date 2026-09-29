@@ -28,23 +28,22 @@ class CategoryQuestionsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.background,
-      extendBodyBehindAppBar: true,
       appBar: CommonGlassAppBar(title: categoryName),
       body: state.isLoading
           ? const CategoryQuestionsLoadingWidget()
           : state.errorMessage != null
-              ? CategoryQuestionsErrorWidget(
-                  errorMessage: state.errorMessage!,
-                  onRetry: controller.refresh,
-                )
-              : CategoryQuestionsSuccessWidget(
-                  questions: state.questions,
-                  categoryId: categoryId,
-                  categoryName: categoryName,
-                  onRefresh: controller.refresh,
-                  onUpvote: controller.upvoteQuestion,
-                  onDownvote: controller.downvoteQuestion,
-                ),
+          ? CategoryQuestionsErrorWidget(
+              errorMessage: state.errorMessage!,
+              onRetry: controller.refresh,
+            )
+          : CategoryQuestionsSuccessWidget(
+              questions: state.questions,
+              categoryId: categoryId,
+              categoryName: categoryName,
+              onRefresh: controller.refresh,
+              onUpvote: controller.upvoteQuestion,
+              onDownvote: controller.downvoteQuestion,
+            ),
     );
   }
 }

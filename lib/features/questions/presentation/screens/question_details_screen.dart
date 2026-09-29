@@ -23,14 +23,14 @@ class QuestionDetailsScreen extends ConsumerStatefulWidget {
       _QuestionDetailsScreenState();
 }
 
-class _QuestionDetailsScreenState
-    extends ConsumerState<QuestionDetailsScreen> {
+class _QuestionDetailsScreenState extends ConsumerState<QuestionDetailsScreen> {
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
+
     Future.microtask(() {
       ref
           .read(questionDetailsControllerProvider(widget.question.id).notifier)
@@ -48,9 +48,11 @@ class _QuestionDetailsScreenState
   @override
   Widget build(BuildContext context) {
     final colors = context.dalleniColors;
+
     final state = ref.watch(
       questionDetailsControllerProvider(widget.question.id),
     );
+
     final controller = ref.read(
       questionDetailsControllerProvider(widget.question.id).notifier,
     );
@@ -59,44 +61,54 @@ class _QuestionDetailsScreenState
 
     return Scaffold(
       backgroundColor: colors.surfaceContainerLowest,
-      extendBodyBehindAppBar: true,
+      resizeToAvoidBottomInset: true,
       appBar: const CommonGlassAppBar(title: 'Question'),
-      body: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          const SliverPadding(
-            padding: EdgeInsets.only(top: kToolbarHeight + 32),
+      body: Stack(
+        children: [
+          CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            slivers: [
+              QuestionDetailsCardWidget(
+                question: activeQuestion,
+                onUpvote: () => controller.voteQuestionPost(0),
+                onDownvote: () => controller.voteQuestionPost(1),
+              ),
+
+              QuestionDetailsAnswersHeaderWidget(
+                answersCount: state.answers.length,
+              ),
+
+              if (state.isLoading)
+                const QuestionDetailsLoadingWidget()
+              else if (state.errorMessage != null)
+                QuestionDetailsErrorWidget(
+                  errorMessage: state.errorMessage!,
+                  onRetry: controller.refresh,
+                )
+              else if (state.answers.isEmpty)
+                const QuestionDetailsEmptyAnswersWidget()
+              else
+                QuestionDetailsAnswersListWidget(
+                  answers: state.answers,
+                  questionId: widget.question.id,
+                  questionUserId: widget.question.userId,
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: 110)),
+            ],
           ),
-          QuestionDetailsCardWidget(
-            question: activeQuestion,
-            onUpvote: () => controller.voteQuestionPost(0),
-            onDownvote: () => controller.voteQuestionPost(1),
-          ),
-          QuestionDetailsAnswersHeaderWidget(
-            answersCount: state.answers.length,
-          ),
-          if (state.isLoading)
-            const QuestionDetailsLoadingWidget()
-          else if (state.errorMessage != null)
-            QuestionDetailsErrorWidget(
-              errorMessage: state.errorMessage!,
-              onRetry: controller.refresh,
-            )
-          else if (state.answers.isEmpty)
-            const QuestionDetailsEmptyAnswersWidget()
-          else
-            QuestionDetailsAnswersListWidget(
-              answers: state.answers,
-              questionId: widget.question.id,
-              questionUserId: widget.question.userId,
+
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: QuestionDetailsCommentInputWidget(
+              controller: _commentController,
+              focusNode: _commentFocusNode,
+              onSend: controller.createComment,
             ),
-          const SliverToBoxAdapter(child: SizedBox(height: 90)),
+          ),
         ],
-      ),
-      bottomNavigationBar: QuestionDetailsCommentInputWidget(
-        controller: _commentController,
-        focusNode: _commentFocusNode,
-        onSend: controller.createComment,
       ),
     );
   }
